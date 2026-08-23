@@ -1,0 +1,319 @@
+{% extends "base.html" %}
+
+{% block title %}Transactions{% endblock %}
+{% block page_title %}Transactions Management{% endblock %}
+{% block page_subtitle %}Record and categorize your income and daily expenditures{% endblock %}
+
+{% block topbar_actions %}
+<button type="button" onclick="openModal('addModal')" class="btn btn-primary btn-sm">+ Add Transaction</button>
+{% endblock %}
+
+{% block content %}
+<!-- Totals Row -->
+<div class="stats-grid mb-24">
+  {% set total_income = namespace(val=0) %}
+  {% set total_expense = namespace(val=0) %}
+  {% for tx in transactions %}
+    {% if tx.type == 'income' %}{% set total_income.val = total_income.val + tx.amount %}{% endif %}
+    {% if tx.type == 'expense' %}{% set total_expense.val = total_expense.val + tx.amount %}{% endif %}
+  {% endfor %}
+  <div class="stat-card">
+    <div class="label">Total Recorded Income</div>
+    <div class="value success">₹{{ "{:,.0f}".format(total_income.val) }}</div>
+    <div class="meta">All time</div>
+    <div class="icon-chip">💰</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Total Recorded Expenses</div>
+    <div class="value danger">₹{{ "{:,.0f}".format(total_expense.val) }}</div>
+    <div class="meta">All time</div>
+    <div class="icon-chip">💳</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Net Balance</div>
+    <div class="value {{ 'success' if (total_income.val - total_expense.val) >= 0 else 'danger' }}">
+      ₹{{ "{:,.0f}".format((total_income.val - total_expense.val) | abs) }}
+    </div>
+    <div class="meta">{{ 'Surplus' if (total_income.val - total_expense.val) >= 0 else 'Deficit' }}</div>
+    <div class="icon-chip">⚖️</div>
+  </div>
+</div>
+
+<!-- Transactions Table Container -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h5 class="card-title">All Transactions ({{ transactions | length }})</h5>
+      <div class="card-subtitle">Filter by description, type, or category</div>
+    </div>
+    <div class="d-flex gap-8">
+      <input type="text" id="searchInput" class="form-control" placeholder="Search..." style="width: 220px;" oninput="filterTransactions()"/>
+      <select id="typeFilter" class="form-control" style="width: 140px;" onchange="filterTransactions()">
+        <option value="">All Types</option>
+        <option value="income">Income Only</option>
+        <option value="expense">Expenses Only</option>
+      </select>
+    </div>
+  </div>
+
+  {% if transactions %}
+  <div class="table-wrapper">
+    <table class="table" id="txTable">
+      <thead>
+        <tr>
+          <th>Description</th>
+          <th>Type</th>
+          <th>Category</th>
+          <th>Date</th>
+          <th style="text-align: right;">Amount</th>
+          <th>Source</th>
+          <th style="text-align: right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for tx in transactions %}
+        <tr class="tx-row" data-type="{{ tx.type }}" data-desc="{{ tx.description | lower }}" data-cat="{{ (tx.category or '') | lower }}">
+          <td>
+            <div style="font-weight: 500;">{{ tx.description }}</div>
+          </td>
+          <td>
+            <span class="badge {{ 'badge-success' if tx.type == 'income' else 'badge-neutral' }}">
+              {{ 'Income' if tx.type == 'income' else 'Expense' }}
+            </span>
+          </td>
+          <td>
+            {% if tx.category %}
+            <span class="badge badge-primary">{{ tx.category }}</span>
+            {% else %}
+            <span style="color: var(--text-muted); font-size: 0.8125rem;">—</span>
+            {% endif %}
+          </td>
+          <td style="color: var(--text-secondary); font-size: 0.8125rem;">{{ tx.date }}</td>
+          <td style="text-align: right; font-weight: 600; color: {{ 'var(--success)' if tx.type == 'income' else 'var(--danger)' }};">
+            {{ '+' if tx.type == 'income' else '-' }}₹{{ "{:,.0f}".format(tx.amount) }}
+          </td>
+          <td>
+            <span class="badge badge-neutral" style="font-size: 0.6875rem;">{{ tx.source or 'manual' }}</span>
+          </td>
+          <td style="text-align: right;">
+            <div class="d-flex gap-8 justify-between" style="justify-content: flex-end;">
+              <button type="button" 
+                      onclick="openEditFromBtn(this)" 
+                      data-id="{{ tx.id }}" 
+                      data-desc="{{ tx.description }}" 
+                      data-amount="{{ tx.amount }}" 
+                      data-date="{{ tx.date }}" 
+                      data-cat="{{ tx.category or '' }}" 
+                      data-type="{{ tx.type }}" 
+                      class="btn btn-outline btn-sm btn-icon" 
+                      title="Edit">✏️</button>
+              <form method="POST" action="{{ url_for('transactions.delete_transaction', transaction_id=tx.id) }}" onsubmit="return confirm('Delete this transaction?');" style="display:inline;">
+                <button type="submit" class="btn btn-outline btn-sm btn-icon" style="color: var(--danger);" title="Delete">🗑️</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="icon">💳</div>
+    <h5>No Transactions Recorded</h5>
+    <p>Add your first income or expense to begin tracking your budget.</p>
+    <button type="button" onclick="openModal('addModal')" class="btn btn-primary mt-8">+ Add Transaction</button>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Add Transaction Modal -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h5>Add Transaction</h5>
+      <button type="button" onclick="closeModal('addModal')" class="btn btn-outline btn-sm btn-icon">✕</button>
+    </div>
+    <form method="POST" action="{{ url_for('transactions.add_transaction') }}">
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Transaction Type</label>
+          <div class="d-flex gap-8">
+            <label style="flex: 1; cursor: pointer;">
+              <input type="radio" name="type" value="expense" checked onchange="toggleTypeFields(this)" style="display: none;"/>
+              <div id="btnExpenseType" class="btn btn-primary btn-block">Expense</div>
+            </label>
+            <label style="flex: 1; cursor: pointer;">
+              <input type="radio" name="type" value="income" onchange="toggleTypeFields(this)" style="display: none;"/>
+              <div id="btnIncomeType" class="btn btn-outline btn-block">Income</div>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="add_desc" class="form-label">Description</label>
+          <input type="text" id="add_desc" name="description" class="form-control" placeholder="e.g. Domino's Pizza, Books, Allowance" required oninput="triggerCategorySuggestion(this.value)"/>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label for="add_amt" class="form-label">Amount (₹)</label>
+            <input type="number" id="add_amt" name="amount" class="form-control" placeholder="0.00" min="0" step="0.01" required/>
+          </div>
+          <div class="form-group">
+            <label for="add_date" class="form-label">Date</label>
+            <input type="date" id="add_date" name="date" class="form-control" value="{{ today }}" required/>
+          </div>
+        </div>
+
+        <div class="form-group" id="categorySelectionGroup">
+          <div class="d-flex justify-between align-center mb-8">
+            <label for="add_cat" class="form-label" style="margin-bottom:0;">Category</label>
+            <span id="aiSuggestionBadge" class="badge badge-primary" style="display:none; cursor:pointer;" onclick="applySuggestedCategory()">✨ Suggested: <span id="suggCatName"></span></span>
+          </div>
+          <select id="add_cat" name="category" class="form-control">
+            <option value="">Auto-Assign / Select Category</option>
+            {% for cat in categories %}
+            <option value="{{ cat }}">{{ cat }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group" id="incomeSourceGroup" style="display: none;">
+          <label for="source_label" class="form-label">Source of Income</label>
+          <input type="text" id="source_label" name="source_label" class="form-control" placeholder="e.g. Parents Allowance, Freelance, Scholarship"/>
+        </div>
+
+        <input type="hidden" name="source" value="manual"/>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" onclick="closeModal('addModal')" class="btn btn-outline">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Transaction</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Edit Transaction Modal -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h5>Edit Transaction</h5>
+      <button type="button" onclick="closeModal('editModal')" class="btn btn-outline btn-sm btn-icon">✕</button>
+    </div>
+    <form id="editForm" method="POST">
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="edit_description" class="form-label">Description</label>
+          <input type="text" id="edit_description" name="description" class="form-control" required/>
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label for="edit_amount" class="form-label">Amount (₹)</label>
+            <input type="number" id="edit_amount" name="amount" class="form-control" step="0.01" min="0" required/>
+          </div>
+          <div class="form-group">
+            <label for="edit_date" class="form-label">Date</label>
+            <input type="date" id="edit_date" name="date" class="form-control" required/>
+          </div>
+        </div>
+        <div class="form-group" id="editCategoryField">
+          <label for="edit_category" class="form-label">Category</label>
+          <select id="edit_category" name="category" class="form-control">
+            <option value="">No Category</option>
+            {% for cat in categories %}
+            <option value="{{ cat }}">{{ cat }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" onclick="closeModal('editModal')" class="btn btn-outline">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function openModal(id) {
+    document.getElementById(id).classList.add('active');
+  }
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('active');
+  }
+
+  function toggleTypeFields(radio) {
+    const isIncome = (radio.value === 'income');
+    document.getElementById('categorySelectionGroup').style.display = isIncome ? 'none' : 'block';
+    document.getElementById('incomeSourceGroup').style.display = isIncome ? 'block' : 'none';
+    document.getElementById('btnExpenseType').className = isIncome ? 'btn btn-outline btn-block' : 'btn btn-primary btn-block';
+    document.getElementById('btnIncomeType').className = isIncome ? 'btn btn-primary btn-block' : 'btn btn-outline btn-block';
+  }
+
+  let timer;
+  let currentSuggested = '';
+
+  function triggerCategorySuggestion(desc) {
+    if (!desc || desc.length < 3) return;
+    clearTimeout(timer);
+    timer = setTimeout(async () => {
+      try {
+        const amt = document.getElementById('add_amt').value || 0;
+        const res = await fetch('/api/categorize', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({description: desc, amount: amt})
+        });
+        const data = await res.json();
+        if (data.category) {
+          currentSuggested = data.category;
+          document.getElementById('suggCatName').textContent = data.category;
+          document.getElementById('aiSuggestionBadge').style.display = 'inline-flex';
+        }
+      } catch(e){}
+    }, 400);
+  }
+
+  function applySuggestedCategory() {
+    if (currentSuggested) {
+      document.getElementById('add_cat').value = currentSuggested;
+      document.getElementById('aiSuggestionBadge').style.display = 'none';
+    }
+  }
+
+  function openEditFromBtn(btn) {
+    const id = btn.getAttribute('data-id');
+    const desc = btn.getAttribute('data-desc');
+    const amount = btn.getAttribute('data-amount');
+    const dateVal = btn.getAttribute('data-date');
+    const cat = btn.getAttribute('data-cat');
+    const type = btn.getAttribute('data-type');
+
+    document.getElementById('editForm').action = `/transactions/${id}/edit`;
+    document.getElementById('edit_description').value = desc || '';
+    document.getElementById('edit_amount').value = amount || '';
+    document.getElementById('edit_date').value = dateVal || '';
+    const catField = document.getElementById('editCategoryField');
+    catField.style.display = (type === 'expense') ? 'block' : 'none';
+    const sel = document.getElementById('edit_category');
+    if (sel) {
+      sel.value = cat || '';
+    }
+    openModal('editModal');
+  }
+
+  function filterTransactions() {
+    const q = document.getElementById('searchInput').value.toLowerCase();
+    const type = document.getElementById('typeFilter').value;
+    document.querySelectorAll('.tx-row').forEach(row => {
+      const matchQ = !q || row.dataset.desc.includes(q) || row.dataset.cat.includes(q);
+      const matchType = !type || row.dataset.type === type;
+      row.style.display = (matchQ && matchType) ? '' : 'none';
+    });
+  }
+</script>
+{% endblock %}

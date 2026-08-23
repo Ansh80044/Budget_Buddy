@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Budget Buddy{% endblock %} — Student Finance</title>
+  <meta name="description" content="{% block meta_description %}Budget Buddy helps college students track income and expenses, create adaptive budgets, predict spending, and get AI financial guidance.{% endblock %}" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <div class="app-wrapper">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-badge">B</div>
+        <div>
+          <div class="logo-title">Budget Buddy</div>
+          <div class="logo-sub">Student Finance</div>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <span class="nav-label">Analytics</span>
+        <a href="{{ url_for('dashboard.dashboard') }}" class="nav-item {% if request.endpoint == 'dashboard.dashboard' %}active{% endif %}">
+          <span class="nav-icon">📊</span> Overview
+        </a>
+        <a href="{{ url_for('reports.reports') }}" class="nav-item {% if request.endpoint == 'reports.reports' %}active{% endif %}">
+          <span class="nav-icon">📈</span> Reports & Trends
+        </a>
+
+        <span class="nav-label">Finance</span>
+        <a href="{{ url_for('transactions.transactions') }}" class="nav-item {% if 'transactions' in request.endpoint %}active{% endif %}">
+          <span class="nav-icon">💳</span> Transactions
+        </a>
+        <a href="{{ url_for('receipt.receipt') }}" class="nav-item {% if request.endpoint == 'receipt.receipt' %}active{% endif %}">
+          <span class="nav-icon">🧾</span> Receipt Scanner
+        </a>
+        <a href="{{ url_for('budget.budget') }}" class="nav-item {% if request.endpoint == 'budget.budget' %}active{% endif %}">
+          <span class="nav-icon">📋</span> Budget Planner
+        </a>
+        <a href="{{ url_for('goals.goals') }}" class="nav-item {% if request.endpoint == 'goals.goals' %}active{% endif %}">
+          <span class="nav-icon">🎯</span> Savings Goals
+        </a>
+
+        <span class="nav-label">Decision Support</span>
+        <a href="{{ url_for('ai.coach') }}" class="nav-item {% if request.endpoint == 'ai.coach' %}active{% endif %}">
+          <span class="nav-icon">💬</span> AI Financial Coach
+        </a>
+        <a href="{{ url_for('simulator.simulator') }}" class="nav-item {% if request.endpoint == 'simulator.simulator' %}active{% endif %}">
+          <span class="nav-icon">🔮</span> What-If Simulator
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-profile-widget">
+          <div class="user-avatar">{{ session.get('user_name', 'S')[0].upper() }}</div>
+          <div class="user-meta">
+            <span class="name">{{ session.get('user_name', 'College Student') }}</span>
+            <span class="email">{{ session.get('user_email', 'student@college.edu') }}</span>
+          </div>
+        </div>
+        <a href="{{ url_for('auth.logout') }}" class="btn btn-outline btn-block btn-sm">
+          Sign Out
+        </a>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="main-content">
+      <!-- Top Navigation Bar -->
+      <header class="topbar">
+        <div class="topbar-header">
+          <h4>{% block page_title %}Overview{% endblock %}</h4>
+          <p>{% block page_subtitle %}College student financial tracking and planning{% endblock %}</p>
+        </div>
+        <div class="topbar-actions">
+          {% block topbar_actions %}
+          <a href="{{ url_for('transactions.transactions') }}" class="btn btn-primary btn-sm">
+            + New Transaction
+          </a>
+          {% endblock %}
+        </div>
+      </header>
+
+      <!-- Page Content -->
+      <main class="page-container">
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ 'success' if category == 'success' else 'danger' if category == 'error' else 'info' }}">
+                <span>{{ message }}</span>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

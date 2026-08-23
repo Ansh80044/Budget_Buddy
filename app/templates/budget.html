@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+
+{% block title %}Budget Planner{% endblock %}
+{% block page_title %}Adaptive Budget Planner{% endblock %}
+{% block page_subtitle %}{{ month_name }} {{ year }} · Configure monthly spending limits and category allocations{% endblock %}
+
+{% block content %}
+<div class="grid-2">
+  <!-- Budget Settings Form -->
+  <div class="d-flex flex-col gap-16">
+    <div class="card" id="budgetFormCard">
+      <div class="card-header">
+        <div>
+          <h5 class="card-title">{{ 'Update' if budget else 'Set' }} Monthly Budget</h5>
+          <div class="card-subtitle">Active for {{ month_name }} {{ year }}</div>
+        </div>
+        <span class="badge badge-primary">{{ month_name }} {{ year }}</span>
+      </div>
+
+      <form method="POST" action="{{ url_for('budget.save_budget') }}" id="budgetForm">
+        <div class="form-group">
+          <label class="form-label">Monthly Allowance / Income Baseline (₹)</label>
+          <input type="number" name="income_display" id="incomeDisplay" class="form-control" value="{{ profile.monthly_income | int }}" readonly style="background-color: var(--bg); cursor: not-allowed;"/>
+          <div class="form-help">Linked to your profile allowance.</div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label for="savings_target" class="form-label">Monthly Savings Target (₹)</label>
+            <input type="number" id="savings_target" name="savings_target" class="form-control" value="{{ budget.savings_target | int if budget else 3000 }}" placeholder="3000" min="0" oninput="calculateAvailableBudget()"/>
+          </div>
+
+          <div class="form-group">
+            <label for="budget_amount" class="form-label">Total Spending Limit (₹)</label>
+            <input type="number" id="budget_amount" name="amount" class="form-control" value="{{ budget.amount | int if budget else 12000 }}" placeholder="12000" min="0" required/>
+          </div>
+        </div>
+        <div id="budgetCalculationNotice" class="alert alert-info" style="font-size: 0.8125rem; margin-bottom: 16px;"></div>
+
+        <!-- Category Limits Section -->
+        <div style="margin-top: 16px;">
+          <div class="d-flex justify-between align-center mb-8">
+            <div style="font-size: 0.8125rem; font-weight: 600; color: var(--text);">Category Spending Limits</div>
+            <button type="button" onclick="addCategoryRow()" class="btn btn-outline btn-sm">+ Add Category</button>
+          </div>
+
+          <div id="categoryRowsContainer" class="d-flex flex-col gap-8">
+            {% if budget and budget.budget_categories %}
+              {% for bc in budget.budget_categories %}
+              <div class="d-flex gap-8 align-center">
+                <input type="text" name="category_name[]" value="{{ bc.category }}" class="form-control" placeholder="Category" style="flex:1;"/>
+                <input type="number" name="category_limit[]" value="{{ bc.limit_amount | int }}" class="form-control" placeholder="Limit ₹" style="width:130px;" min="0"/>
+                <button type="button" onclick="this.parentElement.remove()" class="btn btn-outline btn-sm btn-icon">✕</button>
+              </div>
+              {% endfor %}
+            {% else %}
+              <div class="d-flex gap-8 align-center">
+                <input type="text" name="category_name[]" value="Food & Dining" class="form-control" style="flex:1;"/>
+                <input type="number" name="category_limit[]" value="4500" class="form-control" style="width:130px;" min="0"/>
+                <button type="button" onclick="this.parentElement.remove()" class="btn btn-outline btn-sm btn-icon">✕</button>
+              </div>
+              <div class="d-flex gap-8 align-center">
+                <input type="text" name="category_name[]" value="Transportation" class="form-control" style="flex:1;"/>
+                <input type="number" name="category_limit[]" value="1500" class="form-control" style="width:130px;" min="0"/>
+                <button type="button" onclick="this.parentElement.remove()" class="btn btn-outline btn-sm btn-icon">✕</button>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block btn-lg mt-24">
+          💾 Save & Apply Monthly Budget
+        </button>
+      </form>
+    </div>
+
+    <!-- AI Recommendation Engine Widget -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h5 class="card-title">🤖 Adaptive AI Budget Engine</h5>
+          <div class="card-subtitle">Generate dynamic category allocations based on income & past spending</div>
+        </div>
+        <button type="button" onclick="requestAiRecommendation()" class="btn btn-outline btn-sm">Get Suggestion</button>
+      </div>
+
+      <div id="aiRecommendationOutput">
+        <div class="empty-state" style="padding: 24px 16px;">
+          <div class="icon">💡</div>
+          <h5>Need Help Sizing Your Budget?</h5>
+          <p>Click "Get Suggestion" to calculate optimal spending limits tailored to Indian college student lifestyle patterns.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Current Budget Status Panel -->
+  <div class="d-flex flex-col gap-16">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h5 class="card-title">Budget Allocation Summary</h5>
+          <div class="card-subtitle">{{ month_name }} Status</div>
+        </div>
+      </div>
+
+      {% set spent_amt = analysis.total_expenses %}
+      {% set target_amt = budget.amount if (budget and budget.amount) else 12000 %}
+      {% set usage_pct = [(spent_amt / target_amt * 100) if target_amt > 0 else 0, 100] | min %}
+
+      <div class="stat-card mb-16">
+        <div class="label">Monthly Spending Cap</div>
+        <div class="value">₹{{ "{:,.0f}".format(target_amt) }}</div>
+        <div class="meta">Target Savings: ₹{{ "{:,.0f}".format(budget.savings_target if budget else 3000) }}</div>
+      </div>
+
+      <div class="mb-16">
+        <div class="d-flex justify-between" style="font-size: 0.8125rem; margin-bottom: 6px;">
+          <span>Spent: <strong>₹{{ "{:,.0f}".format(spent_amt) }}</strong></span>
+          <span style="font-weight: 600;">{{ "{:.0f}".format((spent_amt / target_amt * 100) if target_amt else 0) }}%</span>
+        </div>
+        <div class="progress-bar-bg" style="height: 10px;">
+          <div class="progress-bar-fill {{ 'danger' if spent_amt > target_amt else 'warning' if (spent_amt / target_amt) > 0.75 else 'success' }}"
+               style="width: {{ usage_pct }}%;"></div>
+        </div>
+      </div>
+
+      <!-- Category Caps -->
+      {% if budget and budget.budget_categories %}
+      <div style="font-weight: 600; font-size: 0.875rem; margin-bottom: 12px; border-top: 1px solid var(--border); padding-top: 16px;">
+        Category Utilization
+      </div>
+      <div class="d-flex flex-col gap-12">
+        {% for bc in budget.budget_categories %}
+        {% set c_spent = analysis.category_spending.get(bc.category, 0) %}
+        {% set c_pct = [(c_spent / bc.limit_amount * 100) if bc.limit_amount else 0, 100] | min %}
+        <div>
+          <div class="d-flex justify-between" style="font-size: 0.8125rem; margin-bottom: 4px;">
+            <span>{{ bc.category }}</span>
+            <span style="color: {{ 'var(--danger)' if c_spent > bc.limit_amount else 'var(--text-secondary)' }}; font-weight: 500;">
+              ₹{{ "{:,.0f}".format(c_spent) }} / ₹{{ "{:,.0f}".format(bc.limit_amount) }}
+            </span>
+          </div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill {{ 'danger' if c_spent > bc.limit_amount else 'warning' if c_pct > 75 else 'success' }}"
+                 style="width: {{ c_pct }}%;"></div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Category Historical Table -->
+    {% if analysis.category_spending %}
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title">Recorded Spending Breakdown</h5>
+      </div>
+      <div class="table-wrapper">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th style="text-align: right;">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for cat, amt in analysis.category_spending.items() | sort(attribute=1, reverse=True) %}
+            <tr>
+              <td>{{ cat }}</td>
+              <td style="text-align: right; font-weight: 600;">₹{{ "{:,.0f}".format(amt) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const monthlyIncome = {{ profile.monthly_income | float }};
+
+  function calculateAvailableBudget() {
+    const savings = parseFloat(document.getElementById('savings_target').value) || 0;
+    const available = Math.max(monthlyIncome - savings, 0);
+    document.getElementById('budgetCalculationNotice').textContent =
+      `Monthly Allowance ₹${monthlyIncome.toLocaleString()} − Savings Target ₹${savings.toLocaleString()} = ₹${available.toLocaleString()} available to spend.`;
+  }
+
+  function addCategoryRow() {
+    const container = document.getElementById('categoryRowsContainer');
+    const categories = {{ categories | tojson }};
+    const row = document.createElement('div');
+    row.className = 'd-flex gap-8 align-center';
+    row.innerHTML = `
+      <select name="category_name[]" class="form-control" style="flex:1;">
+        <option value="">Select Category</option>
+        ${categories.map(c => `<option value="${c}">${c}</option>`).join('')}
+      </select>
+      <input type="number" name="category_limit[]" class="form-control" placeholder="Limit ₹" style="width:130px;" min="0"/>
+      <button type="button" onclick="this.parentElement.remove()" class="btn btn-outline btn-sm btn-icon">✕</button>
+    `;
+    container.appendChild(row);
+  }
+
+  async function requestAiRecommendation() {
+    const savings = parseFloat(document.getElementById('savings_target').value) || 0;
+    const output = document.getElementById('aiRecommendationOutput');
+    output.innerHTML = '<div style="text-align:center; padding:24px;"><span class="spinner"></span><div style="font-size:0.8125rem; color:var(--text-secondary); margin-top:8px;">Calculating optimal budget distribution...</div></div>';
+
+    try {
+      const resp = await fetch('/api/budget/recommend', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({monthly_income: monthlyIncome, savings_target: savings})
+      });
+      const data = await resp.json();
+
+      let html = `
+        <div class="alert alert-success" style="margin-bottom: 12px;">
+          <span>Recommended Monthly Spending Cap: <strong>₹${data.recommended_budget.toLocaleString()}</strong></span>
+        </div>
+      `;
+
+      if (data.notes && data.notes.length) {
+        data.notes.forEach(note => {
+          html += `<div style="font-size:0.8125rem; color:var(--text-secondary); margin-bottom:8px;">• ${note}</div>`;
+        });
+      }
+
+      html += '<div style="font-weight:600; font-size:0.8125rem; margin:12px 0 8px;">Suggested Category Allocations:</div>';
+      for (const [cat, limit] of Object.entries(data.category_limits)) {
+        html += `
+          <div class="d-flex justify-between" style="padding:6px 0; font-size:0.8125rem; border-bottom:1px solid var(--border);">
+            <span>${cat}</span><span style="font-weight:600;">₹${limit.toLocaleString()}</span>
+          </div>`;
+      }
+
+      html += `<button type="button" onclick="applyRecommendation(${data.recommended_budget})" class="btn btn-primary btn-block btn-sm mt-16">Apply Suggested Budget</button>`;
+      output.innerHTML = html;
+    } catch(e) {
+      output.innerHTML = '<div class="alert alert-danger">Failed to calculate recommendation.</div>';
+    }
+  }
+
+  function applyRecommendation(budget) {
+    document.getElementById('budget_amount').value = budget;
+    alert('Recommended budget applied! Click "Save & Apply" to persist your changes.');
+    document.getElementById('budgetFormCard').scrollIntoView({behavior: 'smooth'});
+  }
+
+  // Run calculation on load
+  calculateAvailableBudget();
+</script>
+{% endblock %}

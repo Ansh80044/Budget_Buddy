@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Create Account — Budget Buddy</title>
+  <meta name="description" content="Create your Budget Buddy account and start managing your student finances."/>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
+  <style>
+    .auth-container {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: var(--bg);
+      padding: 24px;
+    }
+    .auth-card {
+      background-color: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      box-shadow: var(--shadow-card);
+      width: 100%;
+      max-width: 460px;
+      padding: 40px 32px;
+    }
+    .auth-header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    .auth-logo-badge {
+      width: 44px;
+      height: 44px;
+      background-color: var(--primary);
+      color: #FFFFFF;
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="auth-container">
+    <div class="auth-card">
+      <div class="auth-header">
+        <div class="auth-logo-badge">B</div>
+        <h2>Create Account</h2>
+        <p style="margin-top: 4px;">Start smart budgeting designed for college students</p>
+      </div>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+          <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }}">
+            <span>{{ message }}</span>
+          </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <form method="POST" action="{{ url_for('auth.register') }}">
+        <div class="form-group">
+          <label for="name" class="form-label">Full Name</label>
+          <input type="text" id="name" name="name" class="form-control" placeholder="e.g. Rohan Verma" required autocomplete="name"/>
+        </div>
+        <div class="form-group">
+          <label for="email" class="form-label">Email Address</label>
+          <input type="email" id="email" name="email" class="form-control" placeholder="you@college.edu" required autocomplete="email"/>
+        </div>
+        <div class="form-group">
+          <label for="password" class="form-label">Password</label>
+          <input type="password" id="password" name="password" class="form-control" placeholder="Minimum 6 characters" required autocomplete="new-password" minlength="6"/>
+        </div>
+        <div class="form-group">
+          <label for="monthly_income" class="form-label">Monthly Allowance / Income (₹)</label>
+          <input type="number" id="monthly_income" name="monthly_income" class="form-control" placeholder="e.g. 15000" min="0" step="500" value="15000"/>
+          <div class="form-help">You can modify your income and budget anytime from settings.</div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top: 12px;">
+          Create Account
+        </button>
+      </form>
+
+      <div style="text-align: center; margin-top: 24px; font-size: 0.875rem;">
+        <span style="color: var(--text-secondary);">Already registered?</span>
+        <a href="{{ url_for('auth.login') }}" style="margin-left: 4px;">Sign in</a>
+      </div>
+
+      <div style="text-align: center; margin-top: 12px; font-size: 0.75rem;">
+        <a href="{{ url_for('auth.index') }}" style="color: var(--text-secondary);">← Back to home</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

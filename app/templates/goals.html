@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+
+{% block title %}Savings Goals{% endblock %}
+{% block page_title %}Savings Goals{% endblock %}
+{% block page_subtitle %}Set milestone savings targets, log contributions, and track progress toward your goals{% endblock %}
+
+{% block topbar_actions %}
+<button type="button" onclick="openModal('addGoalModal')" class="btn btn-primary btn-sm">+ New Goal</button>
+{% endblock %}
+
+{% block content %}
+<!-- Goals Metrics Row -->
+{% if goals %}
+{% set total_target = namespace(v=0) %}
+{% set total_saved_ns = namespace(v=0) %}
+{% for g in goals %}
+  {% set total_target.v = total_target.v + g.target_amount %}
+  {% set total_saved_ns.v = total_saved_ns.v + g.saved_amount %}
+{% endfor %}
+<div class="stats-grid mb-24">
+  <div class="stat-card">
+    <div class="label">Active Goals</div>
+    <div class="value">{{ goals | length }}</div>
+    <div class="meta">Target milestones</div>
+    <div class="icon-chip">🎯</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Total Amount Saved</div>
+    <div class="value success">₹{{ "{:,.0f}".format(total_saved_ns.v) }}</div>
+    <div class="meta">Across all goals</div>
+    <div class="icon-chip">💰</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Cumulative Target</div>
+    <div class="value">₹{{ "{:,.0f}".format(total_target.v) }}</div>
+    <div class="meta">Total required funds</div>
+    <div class="icon-chip">🏆</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Aggregate Completion</div>
+    <div class="value {{ 'success' if total_saved_ns.v >= total_target.v else '' }}">
+      {{ "{:.0f}".format((total_saved_ns.v / total_target.v * 100) if total_target.v else 0) }}%
+    </div>
+    <div class="meta">Progress to all targets</div>
+    <div class="icon-chip">📈</div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Goals Grid Container -->
+{% if goals %}
+<div class="grid-2">
+  {% for goal in goals %}
+  {% set pct = [(goal.saved_amount / goal.target_amount * 100) if goal.target_amount else 0, 100] | min %}
+  {% set remaining_amt = [goal.target_amount - goal.saved_amount, 0] | max %}
+  <div class="card">
+    <div class="d-flex justify-between align-center mb-16">
+      <div>
+        <div style="font-size: 1rem; font-weight: 600; color: var(--text);">{{ goal.name }}</div>
+        {% if goal.deadline %}
+        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 2px;">Deadline: {{ goal.deadline }}</div>
+        {% endif %}
+      </div>
+      <span class="badge {{ 'badge-success' if pct >= 100 else 'badge-primary' }}">
+        {{ 'Completed' if pct >= 100 else "{:.0f}".format(pct) + '%' }}
+      </span>
+    </div>
+
+    <!-- Amount Indicator -->
+    <div class="d-flex align-center gap-8 mb-8" style="align-items: baseline;">
+      <span style="font-size: 1.625rem; font-weight: 600; color: var(--primary);">₹{{ "{:,.0f}".format(goal.saved_amount) }}</span>
+      <span style="font-size: 0.875rem; color: var(--text-secondary);">of ₹{{ "{:,.0f}".format(goal.target_amount) }}</span>
+    </div>
+
+    <div class="progress-bar-bg mb-8" style="height: 8px;">
+      <div class="progress-bar-fill {{ 'success' if pct >= 100 else '' }}" style="width: {{ pct }}%;"></div>
+    </div>
+
+    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 20px;">
+      {% if pct < 100 %}
+        ₹{{ "{:,.0f}".format(remaining_amt) }} needed to complete goal
+      {% else %}
+        Goal reached successfully!
+      {% endif %}
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="d-flex gap-8">
+      <button type="button" onclick="openContributeModal('{{ goal.id }}', '{{ goal.name | e }}')" class="btn btn-success btn-sm" style="flex: 1;">
+        + Add Funds
+      </button>
+      <button type="button"
+              onclick="openEditGoalFromBtn(this)"
+              data-id="{{ goal.id }}"
+              data-name="{{ goal.name }}"
+              data-target="{{ goal.target_amount }}"
+              data-saved="{{ goal.saved_amount }}"
+              data-deadline="{{ goal.deadline or '' }}"
+              class="btn btn-outline btn-sm">
+        Edit
+      </button>
+      <form method="POST" action="{{ url_for('goals.delete_goal', goal_id=goal.id) }}" onsubmit="return confirm('Delete this savings goal?');" style="display:inline;">
+        <button type="submit" class="btn btn-outline btn-sm btn-icon" style="color: var(--danger);" title="Delete">🗑️</button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card">
+  <div class="empty-state">
+    <div class="icon">🎯</div>
+    <h5>No Active Savings Goals</h5>
+    <p>Create a savings goal to start tracking progress toward milestone purchases.</p>
+    <button type="button" onclick="openModal('addGoalModal')" class="btn btn-primary mt-8">+ Create First Goal</button>
+  </div>
+</div>
+{% endif %}
+
+<!-- Add Goal Modal -->
+<div class="modal-overlay" id="addGoalModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h5>Create Savings Goal</h5>
+      <button type="button" onclick="closeModal('addGoalModal')" class="btn btn-outline btn-sm btn-icon">✕</button>
+    </div>
+    <form method="POST" action="{{ url_for('goals.add_goal') }}">
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Goal Title</label>
+          <input type="text" name="name" class="form-control" placeholder="e.g. New Laptop, Trip, Headphones" required/>
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Target Amount (₹)</label>
+            <input type="number" name="target_amount" class="form-control" placeholder="e.g. 25000" min="1" step="100" required/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Initial Savings (₹)</label>
+            <input type="number" name="saved_amount" class="form-control" placeholder="0" min="0" step="100" value="0"/>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Target Deadline Date (Optional)</label>
+          <input type="date" name="deadline" class="form-control" min="{{ today }}"/>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" onclick="closeModal('addGoalModal')" class="btn btn-outline">Cancel</button>
+        <button type="submit" class="btn btn-primary">Create Goal</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Contribute Modal -->
+<div class="modal-overlay" id="contributeModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h5>Add Funds to <span id="contributeGoalName" style="color: var(--primary);"></span></h5>
+      <button type="button" onclick="closeModal('contributeModal')" class="btn btn-outline btn-sm btn-icon">✕</button>
+    </div>
+    <form id="contributeForm" method="POST">
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Contribution Amount (₹)</label>
+          <input type="number" name="contribution" class="form-control" placeholder="e.g. 1000" min="1" step="100" required/>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" onclick="closeModal('contributeModal')" class="btn btn-outline">Cancel</button>
+        <button type="submit" class="btn btn-success">Add Funds</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Edit Goal Modal -->
+<div class="modal-overlay" id="editGoalModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h5>Edit Savings Goal</h5>
+      <button type="button" onclick="closeModal('editGoalModal')" class="btn btn-outline btn-sm btn-icon">✕</button>
+    </div>
+    <form id="editGoalForm" method="POST">
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Goal Title</label>
+          <input type="text" id="editGoalName" name="name" class="form-control" required/>
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Target Amount (₹)</label>
+            <input type="number" id="editGoalTarget" name="target_amount" class="form-control" min="1" step="100" required/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Saved Amount (₹)</label>
+            <input type="number" id="editGoalSaved" name="saved_amount" class="form-control" min="0" step="100"/>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Target Deadline Date</label>
+          <input type="date" id="editGoalDeadline" name="deadline"/>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" onclick="closeModal('editGoalModal')" class="btn btn-outline">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function openModal(id) { document.getElementById(id).classList.add('active'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+  document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('click', e => { if (e.target === o) o.classList.remove('active'); }));
+
+  function openContributeModal(goalId, goalName) {
+    document.getElementById('contributeGoalName').textContent = goalName;
+    document.getElementById('contributeForm').action = `/goals/${goalId}/contribute`;
+    openModal('contributeModal');
+  }
+
+  function openEditGoalFromBtn(btn) {
+    const id = btn.getAttribute('data-id');
+    const name = btn.getAttribute('data-name');
+    const target = btn.getAttribute('data-target');
+    const saved = btn.getAttribute('data-saved');
+    const deadline = btn.getAttribute('data-deadline');
+
+    document.getElementById('editGoalForm').action = `/goals/${id}/update`;
+    document.getElementById('editGoalName').value = name || '';
+    document.getElementById('editGoalTarget').value = target || '';
+    document.getElementById('editGoalSaved').value = saved || '0';
+    document.getElementById('editGoalDeadline').value = deadline || '';
+    openModal('editGoalModal');
+  }
+</script>
+{% endblock %}

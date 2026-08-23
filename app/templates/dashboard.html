@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+
+{% block title %}Overview{% endblock %}
+{% block page_title %}Financial Overview{% endblock %}
+{% block page_subtitle %}{{ month_name }} {{ year }} · Financial metrics & activity summary{% endblock %}
+
+{% block content %}
+<!-- Metrics Summary Grid -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="label">Monthly Income</div>
+    <div class="value">₹{{ "{:,.0f}".format(monthly_income) }}</div>
+    <div class="meta">{{ month_name }} {{ year }}</div>
+    <div class="icon-chip">💰</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="label">Total Spent</div>
+    <div class="value {{ 'danger' if budget_summary.is_over_budget else '' }}">₹{{ "{:,.0f}".format(total_expenses) }}</div>
+    <div class="meta">{{ "{:.0f}".format(budget_summary.usage_pct) }}% of monthly budget</div>
+    <div class="icon-chip">💳</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="label">Remaining Budget</div>
+    <div class="value {{ 'danger' if budget_summary.remaining_budget < 0 else 'success' if budget_summary.remaining_budget > 0 else '' }}">
+      ₹{{ "{:,.0f}".format(budget_summary.remaining_budget | abs) }}{{ ' over' if budget_summary.remaining_budget < 0 else '' }}
+    </div>
+    <div class="meta">Budget target: ₹{{ "{:,.0f}".format(budget_amount) }}</div>
+    <div class="icon-chip">⚖️</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="label">Predicted Spending</div>
+    <div class="value {{ 'warning' if predicted_spending > budget_amount and budget_amount > 0 else '' }}">₹{{ "{:,.0f}".format(predicted_spending) }}</div>
+    <div class="meta">{{ days_remaining }} days remaining</div>
+    <div class="icon-chip">🔮</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="label">Total Saved</div>
+    <div class="value success">₹{{ "{:,.0f}".format(total_saved) }}</div>
+    <div class="meta">{{ goals | length }} active savings goal{{ 's' if goals | length != 1 else '' }}</div>
+    <div class="icon-chip">🎯</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="label">Avg Daily Spend</div>
+    <div class="value">₹{{ "{:,.0f}".format(avg_daily) }}</div>
+    <div class="meta">Across {{ analysis.transaction_count }} recorded expenses</div>
+    <div class="icon-chip">📅</div>
+  </div>
+</div>
+
+<!-- Budget Progress Indicator -->
+{% if budget_amount > 0 %}
+<div class="card mb-24">
+  <div class="card-header">
+    <div>
+      <h5 class="card-title">Monthly Budget Progress</h5>
+      <div class="card-subtitle">₹{{ "{:,.0f}".format(total_expenses) }} of ₹{{ "{:,.0f}".format(budget_amount) }} spent in {{ month_name }}</div>
+    </div>
+    <a href="{{ url_for('budget.budget') }}" class="btn btn-outline btn-sm">Configure Budget</a>
+  </div>
+  
+  <div class="progress-bar-bg" style="height: 10px; margin-bottom: 8px;">
+    <div class="progress-bar-fill {{ 'danger' if budget_summary.usage_pct > 100 else 'warning' if budget_summary.usage_pct > 75 else 'success' }}"
+         style="width: {{ [budget_summary.usage_pct, 100] | min }}%;"></div>
+  </div>
+  
+  <div class="d-flex justify-between" style="font-size: 0.75rem; color: var(--text-secondary);">
+    <span>₹0</span>
+    <span style="font-weight: 600; color: {{ 'var(--danger)' if budget_summary.usage_pct > 100 else 'var(--warning)' if budget_summary.usage_pct > 75 else 'var(--success)' }};">
+      {{ "{:.1f}".format(budget_summary.usage_pct) }}% Utilized
+    </span>
+    <span>Limit: ₹{{ "{:,.0f}".format(budget_amount) }}</span>
+  </div>
+</div>
+{% endif %}
+
+<!-- Risk Notifications & Category Distribution -->
+<div class="grid-2 mb-24">
+  <!-- Risk Detection -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h5 class="card-title">Budget Risk Detection</h5>
+        <div class="card-subtitle">Automated rule-based financial health checks</div>
+      </div>
+      {% if not risks %}
+      <span class="badge badge-success">Healthy Status</span>
+      {% else %}
+      <span class="badge badge-warning">{{ risks | length }} Alert{{ 's' if risks | length != 1 else '' }}</span>
+      {% endif %}
+    </div>
+
+    {% if risks %}
+      <div class="d-flex flex-col gap-8">
+        {% for risk in risks %}
+        <div class="alert alert-warning" style="margin-bottom: 0;">
+          <span>{{ risk }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state" style="padding: 32px 16px;">
+        <div class="icon">✅</div>
+        <h5>No Budget Risks Detected</h5>
+        <p>Your current spending trajectory is well within your defined monthly budget parameters.</p>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Category Breakdown Chart -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h5 class="card-title">Spending by Category</h5>
+        <div class="card-subtitle">Distribution for {{ month_name }} {{ year }}</div>
+      </div>
+      <a href="{{ url_for('reports.reports') }}" class="btn btn-outline btn-sm">Full Analytics</a>
+    </div>
+
+    {% if category_spending %}
+    <div style="height: 240px; position: relative;">
+      <canvas id="categoryChart"></canvas>
+    </div>
+    {% else %}
+    <div class="empty-state" style="padding: 32px 16px;">
+      <div class="icon">📊</div>
+      <h5>No Category Data Available</h5>
+      <p>Add your first expense transaction to view category spending breakdown.</p>
+      <a href="{{ url_for('transactions.transactions') }}" class="btn btn-primary btn-sm mt-8">+ Add Expense</a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Recent Transactions & Savings Goals -->
+<div class="grid-2">
+  <!-- Recent Activity -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h5 class="card-title">Recent Transactions</h5>
+        <div class="card-subtitle">Latest recorded financial entries</div>
+      </div>
+      <a href="{{ url_for('transactions.transactions') }}" class="btn btn-outline btn-sm">View All</a>
+    </div>
+
+    {% if recent_transactions %}
+    <div class="table-wrapper">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Description</th>
+            <th>Category</th>
+            <th>Date</th>
+            <th style="text-align: right;">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for tx in recent_transactions[:5] %}
+          <tr>
+            <td>
+              <div style="font-weight: 500;">{{ tx.description[:28] }}{{ '...' if tx.description|length > 28 else '' }}</div>
+            </td>
+            <td>
+              {% if tx.category %}
+              <span class="badge badge-neutral">{{ tx.category }}</span>
+              {% else %}
+              <span class="badge badge-success">Income</span>
+              {% endif %}
+            </td>
+            <td style="color: var(--text-secondary); font-size: 0.8125rem;">{{ tx.date }}</td>
+            <td style="text-align: right; font-weight: 600; color: {{ 'var(--success)' if tx.type == 'income' else 'var(--danger)' }};">
+              {{ '+' if tx.type == 'income' else '-' }}₹{{ "{:,.0f}".format(tx.amount) }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state" style="padding: 32px 16px;">
+      <div class="icon">💳</div>
+      <h5>No Transactions Recorded</h5>
+      <p>Start recording your daily income and expenses.</p>
+      <a href="{{ url_for('transactions.transactions') }}" class="btn btn-primary btn-sm mt-8">+ Add Transaction</a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Savings Goals Progress -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h5 class="card-title">Savings Goals</h5>
+        <div class="card-subtitle">Active targets and milestones</div>
+      </div>
+      <a href="{{ url_for('goals.goals') }}" class="btn btn-outline btn-sm">Manage Goals</a>
+    </div>
+
+    {% if goals %}
+    <div class="d-flex flex-col gap-16">
+      {% for goal in goals[:3] %}
+      {% set pct = [(goal.saved_amount / goal.target_amount * 100) if goal.target_amount else 0, 100] | min %}
+      <div style="border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; background-color: var(--surface);">
+        <div class="d-flex justify-between align-center mb-8">
+          <div style="font-weight: 600; font-size: 0.875rem;">{{ goal.name }}</div>
+          <span class="badge {{ 'badge-success' if pct >= 100 else 'badge-primary' }}">{{ "{:.0f}".format(pct) }}%</span>
+        </div>
+        <div class="progress-bar-bg" style="height: 6px; margin-bottom: 8px;">
+          <div class="progress-bar-fill {{ 'success' if pct >= 100 else '' }}" style="width: {{ pct }}%;"></div>
+        </div>
+        <div class="d-flex justify-between" style="font-size: 0.75rem; color: var(--text-secondary);">
+          <span>Saved: ₹{{ "{:,.0f}".format(goal.saved_amount) }}</span>
+          <span>Target: ₹{{ "{:,.0f}".format(goal.target_amount) }}</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state" style="padding: 32px 16px;">
+      <div class="icon">🎯</div>
+      <h5>No Savings Goals Set</h5>
+      <p>Create a savings goal to track your milestone purchases.</p>
+      <a href="{{ url_for('goals.goals') }}" class="btn btn-primary btn-sm mt-8">+ Create Goal</a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+  const categoryData = {{ category_spending | tojson }};
+  if (categoryData && Object.keys(categoryData).length > 0) {
+    const labels = Object.keys(categoryData);
+    const values = Object.values(categoryData);
+    const palette = ['#0F172A','#16A34A','#D97706','#DC2626','#475569','#0284C7','#9333EA','#EA580C','#65A30D','#0D9488','#E11D48','#64748B'];
+
+    new Chart(document.getElementById('categoryChart'), {
+      type: 'doughnut',
+      data: {
+        labels: labels,
+        datasets: [{
+          data: values,
+          backgroundColor: palette.slice(0, labels.length),
+          borderWidth: 1,
+          borderColor: '#E5E7EB'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '70%',
+        plugins: {
+          legend: {
+            position: 'right',
+            labels: {
+              font: { family: 'Poppins', size: 11 },
+              boxWidth: 12,
+              padding: 10
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => ` ₹${ctx.parsed.toLocaleString('en-IN')}`
+            }
+          }
+        }
+      }
+    });
+  }
+</script>
+{% endblock %}

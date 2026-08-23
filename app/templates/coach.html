@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block title %}AI Financial Coach{% endblock %}
+{% block page_title %}AI Financial Coach{% endblock %}
+{% block page_subtitle %}Personalized budgeting advice and question answering based on your actual financial data{% endblock %}
+
+{% block topbar_actions %}
+<button type="button" onclick="clearChat()" class="btn btn-outline btn-sm">Clear Conversation</button>
+{% endblock %}
+
+{% block content %}
+<div class="grid-2">
+  <!-- Interactive Chat Window -->
+  <div class="chat-window">
+    <div class="chat-header">
+      <div class="d-flex align-center gap-12">
+        <div class="logo-badge" style="width: 32px; height: 32px; font-size: 0.875rem;">AI</div>
+        <div>
+          <div style="font-weight: 600; font-size: 0.875rem;">Budget Buddy Advisor</div>
+          <div style="font-size: 0.75rem; color: var(--success); font-weight: 500;">● Active · Connected to your financial data</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Messages Log -->
+    <div class="chat-messages" id="chatMessages">
+      <div class="chat-bubble assistant">
+        Hello! I'm your AI Financial Coach. I analyze your current income, expenses, budget targets, category limits, and predictions in real-time.<br><br>
+        <strong>Try asking:</strong><br>
+        • <em>"Where am I spending the most this month?"</em><br>
+        • <em>"How can I save ₹2,000 this month?"</em><br>
+        • <em>"Am I currently on track with my budget?"</em><br>
+        • <em>"Can I afford a ₹2,500 purchase right now?"</em>
+      </div>
+    </div>
+
+    <!-- Quick Question Suggestions -->
+    <div id="suggestions" style="padding: 10px 16px; border-top: 1px solid var(--border); display: flex; gap: 8px; flex-wrap: wrap; background-color: var(--bg);">
+      <button type="button" onclick="sendSuggestion('Where am I spending the most?')" class="btn btn-outline btn-sm" style="font-size: 0.75rem; padding: 4px 10px;">Where am I spending most?</button>
+      <button type="button" onclick="sendSuggestion('Give me a budget summary')" class="btn btn-outline btn-sm" style="font-size: 0.75rem; padding: 4px 10px;">Budget Summary</button>
+      <button type="button" onclick="sendSuggestion('How to save ₹2,000 this month?')" class="btn btn-outline btn-sm" style="font-size: 0.75rem; padding: 4px 10px;">How to save ₹2,000?</button>
+      <button type="button" onclick="sendSuggestion('Can I afford a ₹3,000 purchase?')" class="btn btn-outline btn-sm" style="font-size: 0.75rem; padding: 4px 10px;">Can I afford ₹3,000?</button>
+    </div>
+
+    <!-- Input Bar -->
+    <div class="chat-input-bar">
+      <input type="text" id="chatInput" class="form-control" placeholder="Ask a financial question..." onkeydown="handleChatKeydown(event)"/>
+      <button type="button" id="sendBtn" onclick="sendMessage()" class="btn btn-primary">
+        Send
+      </button>
+    </div>
+  </div>
+
+  <!-- Real-time Financial Context Card -->
+  <div class="d-flex flex-col gap-16">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h5 class="card-title">Live AI Context Stream</h5>
+          <div class="card-subtitle">Active financial data injected into the advisor model</div>
+        </div>
+        <span class="badge badge-success">Synced</span>
+      </div>
+
+      <div class="d-flex flex-col gap-8" style="font-size: 0.8125rem;">
+        <div class="d-flex justify-between" style="padding: 8px 0; border-bottom: 1px solid var(--border);">
+          <span style="color: var(--text-secondary);">Monthly Income Allowance</span>
+          <span style="font-weight: 600;">Active</span>
+        </div>
+        <div class="d-flex justify-between" style="padding: 8px 0; border-bottom: 1px solid var(--border);">
+          <span style="color: var(--text-secondary);">Current Category Breakdown</span>
+          <span style="font-weight: 600;">Active</span>
+        </div>
+        <div class="d-flex justify-between" style="padding: 8px 0; border-bottom: 1px solid var(--border);">
+          <span style="color: var(--text-secondary);">Monthly Budget & Savings Goal</span>
+          <span style="font-weight: 600;">Active</span>
+        </div>
+        <div class="d-flex justify-between" style="padding: 8px 0; border-bottom: 1px solid var(--border);">
+          <span style="color: var(--text-secondary);">Spending Trajectory & Prediction</span>
+          <span style="font-weight: 600;">Active</span>
+        </div>
+        <div class="d-flex justify-between" style="padding: 8px 0;">
+          <span style="color: var(--text-secondary);">Automated Risk Alerts</span>
+          <span style="font-weight: 600;">Active</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="alert alert-info">
+      <div>
+        <strong>Zero-Config AI Engine:</strong> When an OpenAI API Key is configured in <code>.env</code>, GPT-4o-mini is utilized. Without an API key, the built-in deterministic college financial reasoning engine delivers instant, accurate mathematical analysis.
+      </div>
+    </div>
+
+    <div class="card">
+      <h5 class="card-title mb-16">Related Tools</h5>
+      <div class="d-flex flex-col gap-8">
+        <a href="{{ url_for('simulator.simulator') }}" class="btn btn-outline btn-block" style="justify-content: flex-start;">
+          🔮 What-If Scenario Simulator
+        </a>
+        <a href="{{ url_for('budget.budget') }}" class="btn btn-outline btn-block" style="justify-content: flex-start;">
+          📋 Adaptive Budget Planner
+        </a>
+        <a href="{{ url_for('reports.reports') }}" class="btn btn-outline btn-block" style="justify-content: flex-start;">
+          📊 Spending Analytics & Reports
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function handleChatKeydown(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  }
+
+  function sendSuggestion(text) {
+    document.getElementById('chatInput').value = text;
+    sendMessage();
+  }
+
+  async function sendMessage() {
+    const input = document.getElementById('chatInput');
+    const question = input.value.trim();
+    if (!question) return;
+
+    input.value = '';
+    document.getElementById('sendBtn').disabled = true;
+
+    addMessage(question, 'user');
+    const thinkingId = addThinkingIndicator();
+
+    try {
+      const resp = await fetch('/api/coach/ask', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({question})
+      });
+      const data = await resp.json();
+      removeThinkingIndicator(thinkingId);
+
+      if (data.response) {
+        addMessage(data.response, 'assistant');
+      } else if (data.error) {
+        addMessage(data.error, 'assistant');
+      }
+    } catch(e) {
+      removeThinkingIndicator(thinkingId);
+      addMessage('Unable to complete request. Please verify connection.', 'assistant');
+    } finally {
+      document.getElementById('sendBtn').disabled = false;
+      document.getElementById('chatInput').focus();
+    }
+  }
+
+  function addMessage(text, role) {
+    const messages = document.getElementById('chatMessages');
+    const div = document.createElement('div');
+    div.className = `chat-bubble ${role}`;
+    div.innerHTML = text.replace(/\n/g, '<br/>');
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  function addThinkingIndicator() {
+    const messages = document.getElementById('chatMessages');
+    const id = 'thinking-' + Date.now();
+    const div = document.createElement('div');
+    div.id = id;
+    div.className = 'chat-bubble assistant';
+    div.innerHTML = '<span class="spinner" style="vertical-align: middle; margin-right: 8px;"></span> Analyzing your data...';
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+    return id;
+  }
+
+  function removeThinkingIndicator(id) {
+    const el = document.getElementById(id);
+    if (el) el.remove();
+  }
+
+  function clearChat() {
+    const messages = document.getElementById('chatMessages');
+    messages.innerHTML = `
+      <div class="chat-bubble assistant">
+        Conversation cleared. How else can I assist with your college finances today?
+      </div>
+    `;
+  }
+</script>
+{% endblock %}

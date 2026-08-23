@@ -1,0 +1,310 @@
+{% extends "base.html" %}
+
+{% block title %}What-If Simulator{% endblock %}
+{% block page_title %}What-If Simulator{% endblock %}
+{% block page_subtitle %}Simulate financial decisions and evaluate month-end budget impacts without modifying actual data{% endblock %}
+
+{% block content %}
+<!-- Financial Baseline Grid -->
+<div class="stats-grid mb-24">
+  <div class="stat-card">
+    <div class="label">Monthly Income</div>
+    <div class="value">₹{{ "{:,.0f}".format(monthly_income) }}</div>
+    <div class="meta">Allowance baseline</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Actual Spent</div>
+    <div class="value">₹{{ "{:,.0f}".format(total_expenses) }}</div>
+    <div class="meta">Recorded transactions</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Current Balance</div>
+    <div class="value {{ 'success' if current_balance >= 0 else 'danger' }}">₹{{ "{:,.0f}".format(current_balance | abs) }}</div>
+    <div class="meta">{{ 'Surplus' if current_balance >= 0 else 'Deficit' }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Budget Target</div>
+    <div class="value">₹{{ "{:,.0f}".format(budget_amount) }}</div>
+    <div class="meta">Monthly spend cap</div>
+  </div>
+</div>
+
+<div class="grid-2">
+  <!-- Scenario Selector & Form -->
+  <div class="d-flex flex-col gap-16">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h5 class="card-title">Select Simulation Scenario</h5>
+          <div class="card-subtitle">Choose a hypothetical event to calculate month-end impact</div>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px;">
+        <button type="button" id="btn_purchase" class="btn btn-outline" onclick="setScenario('purchase')" style="justify-content: flex-start; padding: 12px 14px;">
+          🛒 Planned Purchase
+        </button>
+        <button type="button" id="btn_reduce_category" class="btn btn-outline" onclick="setScenario('reduce_category')" style="justify-content: flex-start; padding: 12px 14px;">
+          ✂️ Reduce Spending
+        </button>
+        <button type="button" id="btn_increase_income" class="btn btn-outline" onclick="setScenario('increase_income')" style="justify-content: flex-start; padding: 12px 14px;">
+          💼 Additional Income
+        </button>
+        <button type="button" id="btn_savings_boost" class="btn btn-outline" onclick="setScenario('savings_boost')" style="justify-content: flex-start; padding: 12px 14px;">
+          🎯 Boost Savings Goal
+        </button>
+      </div>
+
+      <!-- Purchase Inputs -->
+      <div id="form_purchase" style="display: none;">
+        <div class="form-group">
+          <label class="form-label">Purchase Description</label>
+          <input type="text" id="p_desc" class="form-control" placeholder="e.g. Noise Cancelling Headphones, Trip Ticket" value="Coding Headphones"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Hypothetical Cost (₹)</label>
+          <input type="number" id="p_amount" class="form-control" placeholder="e.g. 2500" value="2500" min="0" step="100"/>
+        </div>
+      </div>
+
+      <!-- Reduce Inputs -->
+      <div id="form_reduce_category" style="display: none;">
+        <div class="form-group">
+          <label class="form-label">Target Category</label>
+          <select id="r_category" class="form-control">
+            {% for cat, amt in category_spending.items() %}
+            <option value="{{ cat }}">{{ cat }} (Current: ₹{{ "{:,.0f}".format(amt) }})</option>
+            {% endfor %}
+            <option value="Food & Dining">Food & Dining</option>
+            <option value="Entertainment">Entertainment</option>
+            <option value="Shopping">Shopping</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Reduction Target (₹)</label>
+          <input type="number" id="r_amount" class="form-control" placeholder="e.g. 1000" value="1000" min="0" step="100"/>
+        </div>
+      </div>
+
+      <!-- Income Inputs -->
+      <div id="form_increase_income" style="display: none;">
+        <div class="form-group">
+          <label class="form-label">Extra Income Amount (₹)</label>
+          <input type="number" id="inc_amount" class="form-control" placeholder="e.g. 4000 (Scholarship / Freelance)" value="4000" min="0" step="500"/>
+        </div>
+      </div>
+
+      <!-- Savings Boost Inputs -->
+      <div id="form_savings_boost" style="display: none;">
+        <div class="form-group">
+          <label class="form-label">Increase Monthly Savings Target by (₹)</label>
+          <input type="number" id="sav_amount" class="form-control" placeholder="e.g. 1500" value="1500" min="0" step="500"/>
+        </div>
+      </div>
+
+      <div id="unselectedNote" class="alert alert-info">
+        Select a scenario above to test its impact on your savings and predictions.
+      </div>
+
+      <button type="button" id="runSimButton" class="btn btn-primary btn-block btn-lg mt-8" onclick="executeSimulation()" style="display: none;">
+        ▶ Calculate Simulation Impact
+      </button>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title">Scenario Log</h5>
+      </div>
+      <div id="simulationNotes" style="font-size: 0.8125rem; color: var(--text-secondary);">
+        No simulation performed yet in this session.
+      </div>
+    </div>
+  </div>
+
+  <!-- Comparison & Projection Panel -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h5 class="card-title">Simulation Projection Results</h5>
+        <div class="card-subtitle">Side-by-side baseline vs simulated outcome</div>
+      </div>
+      <span id="simStatusBadge" class="badge badge-neutral">Idle</span>
+    </div>
+
+    <div id="emptySimState" class="empty-state" style="padding: 64px 16px;">
+      <div class="icon">🔮</div>
+      <h5>Ready for Simulation</h5>
+      <p>Configure a scenario on the left to calculate projected month-end balance, budget utilization, and savings gap.</p>
+    </div>
+
+    <div id="simResultsContainer" style="display: none;">
+      <!-- Alerts container -->
+      <div id="simAlertsBox" class="mb-16"></div>
+
+      <!-- Before / After Grid -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
+        <!-- Baseline -->
+        <div style="border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; background-color: var(--bg);">
+          <div style="font-weight: 600; font-size: 0.8125rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 12px;">Baseline Metrics</div>
+          <div id="beforeMetrics" class="d-flex flex-col gap-8" style="font-size: 0.8125rem;"></div>
+        </div>
+
+        <!-- Simulated -->
+        <div id="afterPanelBox" style="border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; background-color: var(--surface);">
+          <div style="font-weight: 600; font-size: 0.8125rem; text-transform: uppercase; color: var(--primary); margin-bottom: 12px;">Simulated Outcome</div>
+          <div id="afterMetrics" class="d-flex flex-col gap-8" style="font-size: 0.8125rem;"></div>
+        </div>
+      </div>
+
+      <!-- Chart -->
+      <div style="height: 200px; position: relative;">
+        <canvas id="simComparisonChart"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+  let activeScenario = null;
+  let chartInstance = null;
+
+  function setScenario(sc) {
+    activeScenario = sc;
+    ['purchase', 'reduce_category', 'increase_income', 'savings_boost'].forEach(s => {
+      const btn = document.getElementById('btn_' + s);
+      const form = document.getElementById('form_' + s);
+      if (btn) btn.className = (s === sc) ? 'btn btn-primary' : 'btn btn-outline';
+      if (form) form.style.display = (s === sc) ? 'block' : 'none';
+    });
+    document.getElementById('unselectedNote').style.display = 'none';
+    document.getElementById('runSimButton').style.display = 'block';
+  }
+
+  async function executeSimulation() {
+    if (!activeScenario) return;
+
+    const payload = { scenario: activeScenario };
+    if (activeScenario === 'purchase') {
+      payload.description = document.getElementById('p_desc').value;
+      payload.amount = parseFloat(document.getElementById('p_amount').value) || 0;
+    } else if (activeScenario === 'reduce_category') {
+      payload.category = document.getElementById('r_category').value;
+      payload.reduce_by = parseFloat(document.getElementById('r_amount').value) || 0;
+    } else if (activeScenario === 'increase_income') {
+      payload.amount = parseFloat(document.getElementById('inc_amount').value) || 0;
+    } else if (activeScenario === 'savings_boost') {
+      payload.amount = parseFloat(document.getElementById('sav_amount').value) || 0;
+    }
+
+    try {
+      const resp = await fetch('/api/simulator/run', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+      });
+      const data = await resp.json();
+      renderSimulationResults(data);
+    } catch(err) {
+      alert('Simulation calculation failed: ' + err.message);
+    }
+  }
+
+  function renderSimulationResults(data) {
+    document.getElementById('emptySimState').style.display = 'none';
+    document.getElementById('simResultsContainer').style.display = 'block';
+    document.getElementById('simStatusBadge').textContent = 'Simulated';
+    document.getElementById('simStatusBadge').className = data.over_budget ? 'badge badge-danger' : 'badge badge-success';
+
+    // Alerts
+    const alerts = [];
+    if (data.over_budget) {
+      alerts.push('<div class="alert alert-danger" style="margin-bottom:8px;">🚨 <strong>Budget Alert:</strong> This scenario puts you over your defined monthly spending limit.</div>');
+    }
+    if (data.meets_savings) {
+      alerts.push('<div class="alert alert-success" style="margin-bottom:8px;">✅ <strong>Savings Target:</strong> You successfully maintain your monthly savings target under this plan.</div>');
+    } else {
+      alerts.push('<div class="alert alert-warning" style="margin-bottom:8px;">⚠️ <strong>Savings Gap:</strong> Under this scenario, you may fall short of your savings target.</div>');
+    }
+    document.getElementById('simAlertsBox').innerHTML = alerts.join('');
+
+    // Metrics table generator
+    const generateRows = (obj) => `
+      <div class="d-flex justify-between"><span>Income:</span><strong>₹${(obj.income||0).toLocaleString('en-IN')}</strong></div>
+      <div class="d-flex justify-between"><span>Total Expenses:</span><strong>₹${(obj.expenses||0).toLocaleString('en-IN')}</strong></div>
+      <div class="d-flex justify-between"><span>Net Balance:</span><strong>₹${(obj.balance||0).toLocaleString('en-IN')}</strong></div>
+      <div class="d-flex justify-between"><span>Remaining Budget:</span><strong>₹${(obj.remaining_budget||0).toLocaleString('en-IN')}</strong></div>
+      <div class="d-flex justify-between"><span>Predicted Spend:</span><strong>₹${(obj.predicted_spending||0).toLocaleString('en-IN')}</strong></div>
+    `;
+
+    document.getElementById('beforeMetrics').innerHTML = generateRows(data.before);
+    document.getElementById('afterMetrics').innerHTML = generateRows(data.after);
+
+    // Notes
+    if (data.notes && data.notes.length) {
+      document.getElementById('simulationNotes').innerHTML = data.notes.map(n => `<div style="margin-bottom:4px;">• ${n}</div>`).join('');
+    }
+
+    // Chart
+    renderSimChart(data.before, data.after);
+  }
+
+  function renderSimChart(before, after) {
+    if (chartInstance) chartInstance.destroy();
+    const ctx = document.getElementById('simComparisonChart');
+    chartInstance = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['Income', 'Expenses', 'Net Balance'],
+        datasets: [
+          {
+            label: 'Baseline',
+            data: [before.income, before.expenses, before.balance],
+            backgroundColor: '#0F172A',
+            borderRadius: 4
+          },
+          {
+            label: 'Simulated',
+            data: [after.income, after.expenses, after.balance],
+            backgroundColor: after.balance < 0 ? '#DC2626' : '#16A34A',
+            borderRadius: 4
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: { font: { family: 'Poppins', size: 11 }, boxWidth: 12 }
+          },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => ` ₹${ctx.parsed.y.toLocaleString('en-IN')}`
+            }
+          }
+        },
+        scales: {
+          y: {
+            ticks: {
+              font: { family: 'Poppins', size: 10 },
+              callback: (v) => '₹' + (v >= 1000 ? (v/1000).toFixed(0) + 'k' : v)
+            },
+            grid: { color: '#F1F5F9' }
+          },
+          x: {
+            ticks: { font: { family: 'Poppins', size: 11 } },
+            grid: { display: false }
+          }
+        }
+      }
+    });
+  }
+
+  // Initialize with purchase
+  setScenario('purchase');
+</script>
+{% endblock %}

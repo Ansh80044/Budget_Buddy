@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Budget Buddy — Smart Student Finance Management</title>
+  <meta name="description" content="Budget Buddy helps college students track income and expenses, create adaptive budgets, predict spending, and get personalized AI financial guidance." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  <style>
+    .landing-header {
+      background-color: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .hero-section {
+      padding: 80px 48px;
+      text-align: center;
+      background-color: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+    .hero-title {
+      font-size: 2.75rem;
+      font-weight: 600;
+      color: var(--text);
+      max-width: 720px;
+      margin: 0 auto 16px;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+    .hero-desc {
+      font-size: 1.125rem;
+      color: var(--text-secondary);
+      max-width: 580px;
+      margin: 0 auto 32px;
+      line-height: 1.6;
+    }
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 24px;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 64px 48px;
+    }
+    .feature-card {
+      background-color: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      padding: 32px;
+      box-shadow: var(--shadow-card);
+    }
+    .feature-card .chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-sm);
+      background-color: var(--primary-subtle);
+      color: var(--primary);
+      font-size: 1.125rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+    .feature-card h3 {
+      font-size: 1.125rem;
+      margin-bottom: 8px;
+    }
+    .flow-wrapper {
+      background-color: var(--bg);
+      border-bottom: 1px solid var(--border);
+      padding: 64px 48px;
+      text-align: center;
+    }
+    .flow-steps {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      max-width: 960px;
+      margin: 32px auto 0;
+    }
+    .step-pill {
+      background-color: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 16px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+    }
+    .landing-footer {
+      background-color: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 32px 48px;
+      text-align: center;
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation Header -->
+  <header class="landing-header">
+    <div class="d-flex align-center gap-12">
+      <div class="logo-badge">B</div>
+      <div>
+        <div class="logo-title">Budget Buddy</div>
+        <div class="logo-sub">College Financial Management</div>
+      </div>
+    </div>
+    <div class="d-flex align-center gap-12">
+      <a href="{{ url_for('auth.login') }}" class="btn btn-outline">Sign In</a>
+      <a href="{{ url_for('auth.register') }}" class="btn btn-primary">Get Started</a>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="badge badge-primary" style="margin-bottom: 16px; padding: 4px 12px; font-size: 0.8125rem;">
+      Smart College Budgeting Platform
+    </div>
+    <h1 class="hero-title">Manage your college finances with clarity and foresight</h1>
+    <p class="hero-desc">
+      Track daily income & expenses, get behavior-based adaptive budgets, predict month-end spending, and simulate financial choices with AI guidance.
+    </p>
+    <div class="d-flex justify-between align-center gap-12" style="justify-content: center;">
+      <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-lg">
+        Open Demo Dashboard →
+      </a>
+      <a href="{{ url_for('auth.register') }}" class="btn btn-outline btn-lg">
+        Create Student Account
+      </a>
+    </div>
+  </section>
+
+  <!-- Flow Section -->
+  <section class="flow-wrapper">
+    <h2>Core Methodology</h2>
+    <p style="margin-top: 6px;">A structured approach engineered specifically for student financial lifecycles</p>
+    <div class="flow-steps">
+      <div class="step-pill">1. Track Expenses</div>
+      <div class="step-pill">2. Auto-Categorize</div>
+      <div class="step-pill">3. Analyze Patterns</div>
+      <div class="step-pill">4. Adapt Budget</div>
+      <div class="step-pill">5. Predict Spending</div>
+      <div class="step-pill">6. AI Financial Advice</div>
+      <div class="step-pill">7. What-If Simulator</div>
+    </div>
+  </section>
+
+  <!-- Features Grid -->
+  <section style="background-color: var(--bg);">
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="chip">1</div>
+        <h3>Receipt Scanner (OCR)</h3>
+        <p>Upload any receipt image. The OCR extracts the merchant, date, and amount, then auto-categorizes the expense for your review.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="chip">2</div>
+        <h3>AI Expense Categorization</h3>
+        <p>Automatically classifies transactions into Indian student spending categories like Food & Dining, Travel, Groceries, and Education.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="chip">3</div>
+        <h3>Adaptive Budget Engine</h3>
+        <p>Recommends realistic spending limits based on monthly allowance, category spending history, and savings targets.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="chip">4</div>
+        <h3>Spending Prediction</h3>
+        <p>Estimates expected total month-end expenditure and alerts you early if you are at risk of exceeding your budget.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="chip">5</div>
+        <h3>AI Financial Coach</h3>
+        <p>Ask natural-language questions about your actual data: "Where am I spending most?", "Can I afford ₹3,000 headphones?", or "How to save ₹2,000?"</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="chip">6</div>
+        <h3>What-If Simulator</h3>
+        <p>Test hypothetical purchasing and saving decisions in real-time without modifying your actual recorded transactions.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="landing-footer">
+    <p>Budget Buddy · Academic College Project · Designed for educational budgeting assistance</p>
+  </footer>
+
+</body>
+</html>

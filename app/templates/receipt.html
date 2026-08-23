@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block title %}Receipt Scanner{% endblock %}
+{% block page_title %}Receipt Scanner{% endblock %}
+{% block page_subtitle %}Automated receipt data extraction with OCR and category auto-tagging{% endblock %}
+
+{% block topbar_actions %}
+<a href="{{ url_for('transactions.transactions') }}" class="btn btn-outline btn-sm">← View Transactions</a>
+{% endblock %}
+
+{% block content %}
+<div class="grid-2">
+  <!-- Upload Card -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h5 class="card-title">Upload Receipt Document</h5>
+        <div class="card-subtitle">PNG, JPG, WEBP formats supported (up to 10MB)</div>
+      </div>
+      <span class="badge badge-primary">OCR Engine</span>
+    </div>
+
+    <!-- Drop Zone -->
+    <div id="dropZone" style="border: 2px dashed var(--border); border-radius: var(--radius-md); padding: 48px 24px; text-align: center; background-color: var(--bg); cursor: pointer; transition: var(--transition);" onclick="document.getElementById('receiptFileInput').click()">
+      <div style="font-size: 2.25rem; margin-bottom: 12px; color: var(--primary);">🧾</div>
+      <div style="font-weight: 600; font-size: 0.9375rem; margin-bottom: 4px;">Click or drop receipt image to scan</div>
+      <div style="font-size: 0.75rem; color: var(--text-secondary);">Image text is extracted and parsed into merchant, amount, date & category</div>
+    </div>
+    <input type="file" id="receiptFileInput" accept="image/*" style="display: none;" onchange="handleFileSelected(this)"/>
+
+    <div id="imagePreviewContainer" style="display: none; margin-top: 16px;">
+      <img id="previewImage" src="" alt="Receipt preview" style="max-height: 260px; width: 100%; object-fit: contain; border-radius: var(--radius-sm); border: 1px solid var(--border); background-color: #000;"/>
+    </div>
+
+    <button type="button" id="scanButton" class="btn btn-primary btn-block btn-lg mt-16" style="display: none;" onclick="executeReceiptScan()">
+      🔍 Extract Transaction Data
+    </button>
+
+    <div id="loadingIndicator" style="display: none; text-align: center; padding: 24px;">
+      <span class="spinner" style="width: 24px; height: 24px; border-width: 3px;"></span>
+      <div style="font-size: 0.8125rem; color: var(--text-secondary); margin-top: 8px;">Processing receipt image and extracting fields...</div>
+    </div>
+
+    <div class="alert alert-info mt-16" style="margin-bottom: 0;">
+      <div>
+        <strong>Zero Setup Fallback:</strong> If Tesseract OCR binary is not installed locally, a realistic sample receipt extraction is generated so you can test the full verification and transaction save flow without friction.
+      </div>
+    </div>
+  </div>
+
+  <!-- Extraction Results Form -->
+  <div class="card" id="resultsPanel">
+    <div class="card-header">
+      <div>
+        <h5 class="card-title">Extracted Details</h5>
+        <div class="card-subtitle">Review and verify extracted fields before saving to transactions</div>
+      </div>
+      <span id="extractionStatusBadge" class="badge badge-neutral">Awaiting Input</span>
+    </div>
+
+    <div id="emptyExtractionState" class="empty-state" style="padding: 48px 16px;">
+      <div class="icon">📄</div>
+      <h5>No Receipt Processed Yet</h5>
+      <p>Select or drag a receipt image on the left to extract merchant, date, and amount fields automatically.</p>
+    </div>
+
+    <div id="extractedFormWrapper" style="display: none;">
+      <form method="POST" action="{{ url_for('receipt.save_receipt_expense') }}">
+        <div class="form-group">
+          <label class="form-label">Merchant / Description</label>
+          <input type="text" id="res_desc" name="description" class="form-control" required/>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Amount (₹)</label>
+            <input type="number" id="res_amount" name="amount" class="form-control" step="0.01" min="0" required/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Transaction Date</label>
+            <input type="date" id="res_date" name="date" class="form-control" value="{{ today }}" required/>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Assigned Category</label>
+          <select id="res_category" name="category" class="form-control">
+            {% for cat in categories %}
+            <option value="{{ cat }}">{{ cat }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Raw Extracted Text</label>
+          <div id="rawOcrText" style="padding: 10px 12px; background-color: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); font-family: monospace; font-size: 0.75rem; max-height: 120px; overflow-y: auto; white-space: pre-wrap; color: var(--text-secondary);"></div>
+        </div>
+
+        <button type="submit" class="btn btn-success btn-block btn-lg mt-16">
+          💾 Save to Transactions
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function handleFileSelected(input) {
+    if (input.files && input.files[0]) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        document.getElementById('previewImage').src = e.target.result;
+        document.getElementById('imagePreviewContainer').style.display = 'block';
+        document.getElementById('scanButton').style.display = 'block';
+      };
+      reader.readAsDataURL(input.files[0]);
+    }
+  }
+
+  async function executeReceiptScan() {
+    const input = document.getElementById('receiptFileInput');
+    if (!input.files || !input.files[0]) return;
+
+    document.getElementById('scanButton').style.display = 'none';
+    document.getElementById('loadingIndicator').style.display = 'block';
+    document.getElementById('emptyExtractionState').style.display = 'none';
+
+    const formData = new FormData();
+    formData.append('receipt_image', input.files[0]);
+
+    try {
+      const resp = await fetch('/receipt/scan', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await resp.json();
+
+      document.getElementById('res_desc').value = data.description || data.merchant || 'Store Purchase';
+      document.getElementById('res_amount').value = data.amount || 0;
+      document.getElementById('res_date').value = data.date || '{{ today }}';
+      document.getElementById('rawOcrText').textContent = data.ocr_text || '(No raw text)';
+
+      const catSelect = document.getElementById('res_category');
+      if (data.category && catSelect) {
+        catSelect.value = data.category;
+      }
+
+      document.getElementById('extractionStatusBadge').textContent = 'Extracted';
+      document.getElementById('extractionStatusBadge').className = 'badge badge-success';
+      document.getElementById('extractedFormWrapper').style.display = 'block';
+    } catch(err) {
+      alert('Error extracting receipt: ' + err.message);
+      document.getElementById('emptyExtractionState').style.display = 'block';
+      document.getElementById('scanButton').style.display = 'block';
+    } finally {
+      document.getElementById('loadingIndicator').style.display = 'none';
+    }
+  }
+</script>
+{% endblock %}

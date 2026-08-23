@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Sign In — Budget Buddy</title>
+  <meta name="description" content="Sign in to Budget Buddy to manage your student finances."/>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
+  <style>
+    .auth-container {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: var(--bg);
+      padding: 24px;
+    }
+    .auth-card {
+      background-color: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      box-shadow: var(--shadow-card);
+      width: 100%;
+      max-width: 440px;
+      padding: 40px 32px;
+    }
+    .auth-header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    .auth-logo-badge {
+      width: 44px;
+      height: 44px;
+      background-color: var(--primary);
+      color: #FFFFFF;
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+    .divider {
+      display: flex;
+      align-items: center;
+      text-align: center;
+      margin: 20px 0;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      border-bottom: 1px solid var(--border);
+    }
+    .divider:not(:empty)::before { margin-right: 12px; }
+    .divider:not(:empty)::after { margin-left: 12px; }
+  </style>
+</head>
+<body>
+  <div class="auth-container">
+    <div class="auth-card">
+      <div class="auth-header">
+        <div class="auth-logo-badge">B</div>
+        <h2>Budget Buddy</h2>
+        <p style="margin-top: 4px;">Smart Financial Management for College Students</p>
+      </div>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+          <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }}">
+            <span>{{ message }}</span>
+          </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <form method="POST" action="{{ url_for('auth.login') }}" id="loginForm">
+        <div class="form-group">
+          <label for="email" class="form-label">Email Address</label>
+          <input type="email" id="email" name="email" class="form-control" placeholder="student@college.edu" required autocomplete="email" value="student@college.edu"/>
+        </div>
+        <div class="form-group">
+          <div class="d-flex justify-between align-center" style="margin-bottom: 6px;">
+            <label for="password" class="form-label" style="margin-bottom:0;">Password</label>
+          </div>
+          <input type="password" id="password" name="password" class="form-control" placeholder="••••••••" required autocomplete="current-password" value="demo123"/>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top: 8px;">
+          Sign In
+        </button>
+      </form>
+
+      <div class="divider">or quick access</div>
+
+      <button type="button" onclick="fillDemoAndSubmit()" class="btn btn-outline btn-block">
+        ⚡ 1-Click Demo Login
+      </button>
+
+      <div style="text-align: center; margin-top: 24px; font-size: 0.875rem;">
+        <span style="color: var(--text-secondary);">New to Budget Buddy?</span>
+        <a href="{{ url_for('auth.register') }}" style="margin-left: 4px;">Create an account</a>
+      </div>
+
+      <div style="text-align: center; margin-top: 12px; font-size: 0.75rem;">
+        <a href="{{ url_for('auth.index') }}" style="color: var(--text-secondary);">← Back to home</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function fillDemoAndSubmit() {
+      document.getElementById('email').value = 'student@college.edu';
+      document.getElementById('password').value = 'demo123';
+      document.getElementById('loginForm').submit();
+    }
+  </script>
+</body>
+</html>

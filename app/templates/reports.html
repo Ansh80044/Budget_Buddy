@@ -1,0 +1,324 @@
+{% extends "base.html" %}
+
+{% block title %}Reports & Analytics{% endblock %}
+{% block page_title %}Reports & Analytics{% endblock %}
+{% block page_subtitle %}{{ month_name }} {{ year }} · Historical spending patterns, category distributions and trend analysis{% endblock %}
+
+{% block topbar_actions %}
+<span class="badge badge-primary">{{ month_name }} {{ year }}</span>
+{% endblock %}
+
+{% block content %}
+<!-- Analytics Summary Grid -->
+<div class="stats-grid mb-24">
+  <div class="stat-card">
+    <div class="label">Monthly Allowance</div>
+    <div class="value">₹{{ "{:,.0f}".format(monthly_income) }}</div>
+    <div class="meta">Baseline income</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Total Spent</div>
+    <div class="value danger">₹{{ "{:,.0f}".format(analysis.total_expenses) }}</div>
+    <div class="meta">{{ analysis.transaction_count }} recorded expenses</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Current Savings Surplus</div>
+    <div class="value {{ 'success' if monthly_income >= analysis.total_expenses else 'danger' }}">
+      ₹{{ "{:,.0f}".format((monthly_income - analysis.total_expenses) | abs) }}
+    </div>
+    <div class="meta">{{ 'Surplus' if monthly_income >= analysis.total_expenses else 'Deficit' }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Avg Daily Expenditure</div>
+    <div class="value">₹{{ "{:,.0f}".format(analysis.avg_daily_spending) }}</div>
+    <div class="meta">Per active day</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Projected Month-End</div>
+    <div class="value warning">₹{{ "{:,.0f}".format(prediction.predicted_spending) }}</div>
+    <div class="meta">{{ prediction.days_remaining }} days remaining</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Savings Goals Total</div>
+    <div class="value success">₹{{ "{:,.0f}".format(total_saved) }}</div>
+    <div class="meta">of ₹{{ "{:,.0f}".format(total_goal_target) }} target</div>
+  </div>
+</div>
+
+<!-- Charts Grid Row 1 -->
+<div class="grid-2 mb-24">
+  <!-- Category Donut -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h5 class="card-title">Category Spending Share</h5>
+        <div class="card-subtitle">Breakdown for {{ month_name }} {{ year }}</div>
+      </div>
+    </div>
+    {% if analysis.category_spending %}
+    <div style="height: 280px; position: relative;">
+      <canvas id="categoryDonutChart"></canvas>
+    </div>
+    {% else %}
+    <div class="empty-state" style="padding: 48px 16px;">
+      <div class="icon">📊</div>
+      <h5>No Category Data</h5>
+      <p>Record expenses to view category distribution.</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Income vs Expenses Bar -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h5 class="card-title">Income vs Expenses vs Predicted</h5>
+        <div class="card-subtitle">Monthly balance benchmark</div>
+      </div>
+    </div>
+    <div style="height: 280px; position: relative;">
+      <canvas id="incomeVsExpenseChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Charts Grid Row 2 -->
+<div class="grid-2 mb-24">
+  <!-- Monthly Trend -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h5 class="card-title">Monthly Spending Trend</h5>
+        <div class="card-subtitle">Multi-month expenditure progression</div>
+      </div>
+    </div>
+    <div style="height: 240px; position: relative;">
+      <canvas id="monthlyTrendChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Budget Allocation -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h5 class="card-title">Budget Limit Allocation</h5>
+        <div class="card-subtitle">Spent vs Remaining vs Target Savings</div>
+      </div>
+    </div>
+    <div style="height: 240px; position: relative;">
+      <canvas id="budgetAllocationChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Largest Expenses & Savings Goals Table -->
+<div class="grid-2">
+  <!-- Largest Expenses -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h5 class="card-title">Top 5 Highest Expenses</h5>
+        <div class="card-subtitle">Identified discretionary outliers</div>
+      </div>
+    </div>
+    {% if analysis.largest_expenses %}
+    <div class="table-wrapper">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Description</th>
+            <th>Category</th>
+            <th style="text-align: right;">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for exp in analysis.largest_expenses %}
+          <tr>
+            <td>
+              <div style="font-weight: 500;">{{ exp.description }}</div>
+            </td>
+            <td>
+              <span class="badge badge-neutral">{{ exp.category or '—' }}</span>
+            </td>
+            <td style="text-align: right; font-weight: 600; color: var(--danger);">
+              ₹{{ "{:,.0f}".format(exp.amount) }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state" style="padding: 32px 16px;">
+      <p>No expenses recorded yet.</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Savings Goals -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h5 class="card-title">Active Savings Goals Status</h5>
+        <div class="card-subtitle">Progress toward key student targets</div>
+      </div>
+      <a href="{{ url_for('goals.goals') }}" class="btn btn-outline btn-sm">Manage</a>
+    </div>
+
+    {% if goals %}
+    <div class="d-flex flex-col gap-12">
+      {% for goal in goals %}
+      {% set pct = [(goal.saved_amount / goal.target_amount * 100) if goal.target_amount else 0, 100] | min %}
+      <div style="border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 16px; background-color: var(--surface);">
+        <div class="d-flex justify-between align-center mb-8">
+          <span style="font-weight: 600; font-size: 0.8125rem;">{{ goal.name }}</span>
+          <span class="badge {{ 'badge-success' if pct >= 100 else 'badge-primary' }}">{{ "{:.0f}".format(pct) }}%</span>
+        </div>
+        <div class="progress-bar-bg" style="height: 6px; margin-bottom: 6px;">
+          <div class="progress-bar-fill {{ 'success' if pct >= 100 else '' }}" style="width: {{ pct }}%;"></div>
+        </div>
+        <div class="d-flex justify-between" style="font-size: 0.75rem; color: var(--text-secondary);">
+          <span>₹{{ "{:,.0f}".format(goal.saved_amount) }}</span>
+          <span>Target: ₹{{ "{:,.0f}".format(goal.target_amount) }}</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state" style="padding: 32px 16px;">
+      <p>No savings goals established.</p>
+      <a href="{{ url_for('goals.goals') }}" class="btn btn-primary btn-sm mt-8">Create Goal</a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+  const palette = ['#0F172A','#16A34A','#D97706','#DC2626','#475569','#0284C7','#9333EA','#EA580C','#65A30D','#0D9488','#E11D48','#64748B'];
+
+  // Category Donut
+  const catData = {{ analysis.category_spending | tojson }};
+  if (catData && Object.keys(catData).length > 0) {
+    new Chart(document.getElementById('categoryDonutChart'), {
+      type: 'doughnut',
+      data: {
+        labels: Object.keys(catData),
+        datasets: [{
+          data: Object.values(catData),
+          backgroundColor: palette.slice(0, Object.keys(catData).length),
+          borderWidth: 1,
+          borderColor: '#E5E7EB'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '68%',
+        plugins: {
+          legend: {
+            position: 'right',
+            labels: { font: { family: 'Poppins', size: 10 }, boxWidth: 10, padding: 8 }
+          },
+          tooltip: {
+            callbacks: { label: ctx => ` ₹${ctx.parsed.toLocaleString('en-IN')}` }
+          }
+        }
+      }
+    });
+  }
+
+  // Income vs Expenses Bar
+  new Chart(document.getElementById('incomeVsExpenseChart'), {
+    type: 'bar',
+    data: {
+      labels: ['Monthly Allocation'],
+      datasets: [
+        { label: 'Allowance', data: [{{ monthly_income }}], backgroundColor: '#0F172A', borderRadius: 4 },
+        { label: 'Actual Spent', data: [{{ analysis.total_expenses }}], backgroundColor: '#DC2626', borderRadius: 4 },
+        { label: 'Predicted Total', data: [{{ prediction.predicted_spending }}], backgroundColor: '#D97706', borderRadius: 4 }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { font: { family: 'Poppins', size: 11 }, boxWidth: 12 } }
+      },
+      scales: {
+        y: {
+          ticks: { font: { family: 'Poppins', size: 10 }, callback: v => '₹' + (v >= 1000 ? (v/1000).toFixed(0) + 'k' : v) },
+          grid: { color: '#F1F5F9' }
+        },
+        x: { ticks: { font: { family: 'Poppins' } }, grid: { display: false } }
+      }
+    }
+  });
+
+  // Monthly Trend Line
+  const trendData = {{ all_analysis.monthly_trend | tojson }};
+  const trendKeys = Object.keys(trendData).slice(-6);
+  const trendVals = trendKeys.map(k => trendData[k]);
+
+  new Chart(document.getElementById('monthlyTrendChart'), {
+    type: 'line',
+    data: {
+      labels: trendKeys.length ? trendKeys : ['Current Month'],
+      datasets: [{
+        label: 'Monthly Expenditure',
+        data: trendVals.length ? trendVals : [{{ analysis.total_expenses }}],
+        borderColor: '#0F172A',
+        backgroundColor: 'rgba(15, 23, 42, 0.05)',
+        fill: true,
+        tension: 0.3,
+        borderWidth: 2,
+        pointRadius: 4,
+        pointBackgroundColor: '#0F172A'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: {
+          ticks: { font: { family: 'Poppins', size: 10 }, callback: v => '₹' + (v >= 1000 ? (v/1000).toFixed(0) + 'k' : v) },
+          grid: { color: '#F1F5F9' }
+        },
+        x: { ticks: { font: { family: 'Poppins', size: 10 } }, grid: { display: false } }
+      }
+    }
+  });
+
+  // Budget Allocation Bar
+  const budgetCap = {{ budget_amount }};
+  const spentTotal = {{ analysis.total_expenses }};
+  const remainCap = Math.max(budgetCap - spentTotal, 0);
+
+  new Chart(document.getElementById('budgetAllocationChart'), {
+    type: 'bar',
+    data: {
+      labels: ['Spent', 'Remaining Spend Cap', 'Savings Target'],
+      datasets: [{
+        data: [spentTotal, remainCap, {{ savings_target }}],
+        backgroundColor: ['#DC2626', '#16A34A', '#0F172A'],
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: {
+          ticks: { font: { family: 'Poppins', size: 10 }, callback: v => '₹' + (v >= 1000 ? (v/1000).toFixed(0) + 'k' : v) },
+          grid: { color: '#F1F5F9' }
+        },
+        x: { ticks: { font: { family: 'Poppins', size: 10 } }, grid: { display: false } }
+      }
+    }
+  });
+</script>
+{% endblock %}
