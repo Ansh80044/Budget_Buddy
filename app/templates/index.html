@@ -1,19 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Budget Buddy — High-Trust Student Financial Intelligence</title>
-  <meta name="description" content="A premium, editorial financial management platform engineered for college students. Track expenses, forecast monthly cash flow, and simulate financial decisions." />
-  
+  <title>Budget Buddy — Student Financial Intelligence</title>
+  <meta name="description"
+    content="A premium, editorial financial management platform engineered for college students. Track expenses, forecast monthly cash flow, and simulate financial decisions." />
+
   <!-- Typography: Playfair Display (Headings) & Plus Jakarta Sans (Body) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet" />
 
   <style>
     /* ── Editorial High-Trust Fintech Design System ───────────────────────── */
-    *, *::before, *::after {
+    *,
+    *::before,
+    *::after {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
@@ -41,7 +47,10 @@
       overflow-x: hidden;
     }
 
-    h1, h2, h3, h4 {
+    h1,
+    h2,
+    h3,
+    h4 {
       font-family: 'Playfair Display', Georgia, serif;
       font-weight: 600;
       color: var(--text-main);
@@ -81,11 +90,25 @@
     }
 
     /* Staggered entrance delays active only when visible */
-    .fade-in-up.is-visible.delay-100 { transition-delay: 0.1s; }
-    .fade-in-up.is-visible.delay-200 { transition-delay: 0.2s; }
-    .fade-in-up.is-visible.delay-300 { transition-delay: 0.3s; }
-    .fade-in-up.is-visible.delay-400 { transition-delay: 0.4s; }
-    .fade-in-up.is-visible.delay-500 { transition-delay: 0.5s; }
+    .fade-in-up.is-visible.delay-100 {
+      transition-delay: 0.1s;
+    }
+
+    .fade-in-up.is-visible.delay-200 {
+      transition-delay: 0.2s;
+    }
+
+    .fade-in-up.is-visible.delay-300 {
+      transition-delay: 0.3s;
+    }
+
+    .fade-in-up.is-visible.delay-400 {
+      transition-delay: 0.4s;
+    }
+
+    .fade-in-up.is-visible.delay-500 {
+      transition-delay: 0.5s;
+    }
 
     @media (prefers-reduced-motion: reduce) {
       .fade-in-up {
@@ -253,20 +276,98 @@
 
     .hero-image-wrapper {
       position: relative;
-      text-align: center;
-    }
-
-    .hero-3d-img {
       width: 100%;
-      max-width: 540px;
-      height: auto;
-      display: block;
-      margin: 0 auto;
-      transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+      height: 480px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      perspective: 1200px;
     }
 
-    .hero-3d-img:hover {
-      transform: translateY(-6px) scale(1.02);
+    .card-ambient-glow {
+      position: absolute;
+      width: 360px;
+      height: 360px;
+      background: radial-gradient(circle, rgba(17, 24, 39, 0.08) 0%, rgba(16, 185, 129, 0.18) 40%, transparent 70%);
+      filter: blur(45px);
+      z-index: 1;
+      pointer-events: none;
+      animation: ambientPulse 5s ease-in-out infinite alternate;
+    }
+
+    @keyframes ambientPulse {
+      0% {
+        transform: scale(0.92);
+        opacity: 0.6;
+      }
+
+      100% {
+        transform: scale(1.08);
+        opacity: 0.9;
+      }
+    }
+
+    .financial-card {
+      position: absolute;
+      height: 320px;
+      width: 230px;
+      border-radius: 1.25rem;
+      object-fit: cover;
+      box-shadow:
+        0 25px 50px -12px rgba(0, 0, 0, 0.35),
+        0 0 0 1px rgba(0, 0, 0, 0.08),
+        0 10px 30px rgba(0, 0, 0, 0.15);
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      cursor: pointer;
+      will-change: transform;
+    }
+
+    /* Back Card - Tilted & Pushed Right */
+    .card-back {
+      transform: rotate(-6deg) translateX(70px) scale(0.95);
+      z-index: 2;
+      filter: brightness(0.9);
+      animation: floatBackCard 6s ease-in-out infinite alternate;
+    }
+
+    .card-back:hover {
+      transform: translateY(-14px) rotate(-4deg) translateX(75px) scale(1.02);
+      filter: brightness(1);
+      z-index: 5;
+      box-shadow: 0 35px 70px -15px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(0, 0, 0, 0.12);
+    }
+
+    /* Front Card - Tilted & Pushed Left */
+    .card-front {
+      transform: rotate(6deg) translateX(-50px);
+      z-index: 3;
+      animation: floatFrontCard 6s ease-in-out infinite alternate-reverse;
+    }
+
+    .card-front:hover {
+      transform: translateY(-14px) rotate(4deg) translateX(-45px) scale(1.04);
+      z-index: 6;
+      box-shadow: 0 35px 70px -15px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(0, 0, 0, 0.12);
+    }
+
+    @keyframes floatFrontCard {
+      0% {
+        transform: translateY(0px) rotate(6deg) translateX(-50px);
+      }
+
+      100% {
+        transform: translateY(-8px) rotate(7deg) translateX(-48px);
+      }
+    }
+
+    @keyframes floatBackCard {
+      0% {
+        transform: translateY(0px) rotate(-6deg) translateX(70px) scale(0.95);
+      }
+
+      100% {
+        transform: translateY(-8px) rotate(-5deg) translateX(72px) scale(0.96);
+      }
     }
 
     /* ── Editorial Section Layouts ───────────────────────────────────────── */
@@ -400,16 +501,20 @@
         padding: 40px 0 60px;
         text-align: center;
       }
+
       .hero-subtitle {
         margin: 0 auto 32px;
       }
+
       .hero-actions {
         justify-content: center;
       }
+
       .feature-row {
         grid-template-columns: 1fr;
         gap: 12px;
       }
+
       .methodology-grid {
         grid-template-columns: 1fr 1fr;
       }
@@ -419,22 +524,44 @@
       .hero-title {
         font-size: 2.5rem;
       }
+
       .methodology-grid {
         grid-template-columns: 1fr;
       }
+
       .container {
         padding: 0 24px;
       }
+
       .hero-actions {
         flex-direction: column;
         width: 100%;
       }
+
       .btn-pill {
         width: 100%;
+      }
+
+      .hero-image-wrapper {
+        height: 360px;
+      }
+
+      .financial-card {
+        height: 250px;
+        width: 175px;
+      }
+
+      .card-back {
+        transform: rotate(-6deg) translateX(40px) scale(0.92);
+      }
+
+      .card-front {
+        transform: rotate(6deg) translateX(-30px);
       }
     }
   </style>
 </head>
+
 <body>
 
   <!-- Navigation -->
@@ -445,7 +572,8 @@
       </a>
       <div class="nav-links">
         <a href="{{ url_for('auth.login') }}">Sign In</a>
-        <a href="{{ url_for('auth.register') }}" class="btn-pill btn-pill-primary" style="padding: 10px 24px; font-size: 0.875rem;">
+        <a href="{{ url_for('auth.register') }}" class="btn-pill btn-pill-primary"
+          style="padding: 10px 24px; font-size: 0.875rem;">
           Get Started
         </a>
       </div>
@@ -462,7 +590,8 @@
           <div class="hero-kicker fade-in-up">High-Trust Student Fintech</div>
           <h1 class="hero-title fade-in-up delay-100">Financial clarity designed for college life.</h1>
           <p class="hero-subtitle fade-in-up delay-200">
-            An editorial financial intelligence platform for university students. Track income and expenses, generate adaptive budgets, forecast month-end cash flow, and simulate major decisions.
+            An editorial financial intelligence platform for university students. Track income and expenses, generate
+            adaptive budgets, forecast month-end cash flow, and simulate major decisions.
           </p>
           <div class="hero-actions fade-in-up delay-300">
             <a href="{{ url_for('auth.login') }}" class="btn-pill btn-pill-primary">
@@ -474,7 +603,13 @@
           </div>
         </div>
         <div class="hero-image-wrapper fade-in-up delay-200">
-          <img src="{{ url_for('static', filename='images/hero_3d_fintech.jpg') }}" alt="3D Minimalist Financial Asset" class="hero-3d-img" />
+          <div class="card-ambient-glow"></div>
+          <!-- Back Card (4K Ultra-Crisp Fintech Asset) -->
+          <img src="https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=1200&q=95"
+            alt="Financial Card Back" class="financial-card card-back" />
+          <!-- Front Card (4K Ultra-Crisp Fintech Asset) -->
+          <img src="https://images.unsplash.com/photo-1559526324-4b87b5e36e44?auto=format&fit=crop&w=1200&q=95"
+            alt="Financial Card Front" class="financial-card card-front" />
         </div>
       </div>
     </section>
@@ -492,25 +627,29 @@
         <div class="methodology-step fade-in-up delay-100">
           <div class="step-index">01 · Capture</div>
           <div class="step-title">Frictionless Tracking</div>
-          <div class="step-text">Ingest daily expenditures and allowances through instant entry or automated receipt OCR processing.</div>
+          <div class="step-text">Ingest daily expenditures and allowances through instant entry or automated receipt OCR
+            processing.</div>
         </div>
 
         <div class="methodology-step fade-in-up delay-200">
           <div class="step-index">02 · Understand</div>
           <div class="step-title">Pattern Discovery</div>
-          <div class="step-text">Automatic categorization into student-focused verticals like food, campus transit, and course materials.</div>
+          <div class="step-text">Automatic categorization into student-focused verticals like food, campus transit, and
+            course materials.</div>
         </div>
 
         <div class="methodology-step fade-in-up delay-300">
           <div class="step-index">03 · Forecast</div>
           <div class="step-title">Predictive Trajectory</div>
-          <div class="step-text">Mathematical month-end projections alert you to potential budget overruns before they materialize.</div>
+          <div class="step-text">Mathematical month-end projections alert you to potential budget overruns before they
+            materialize.</div>
         </div>
 
         <div class="methodology-step fade-in-up delay-400">
           <div class="step-index">04 · Simulate</div>
           <div class="step-title">Decision Testing</div>
-          <div class="step-text">Evaluate discretionary purchases and savings target adjustments with real-time what-if simulations.</div>
+          <div class="step-text">Evaluate discretionary purchases and savings target adjustments with real-time what-if
+            simulations.</div>
         </div>
       </div>
     </section>
@@ -528,25 +667,29 @@
         <div class="feature-row fade-in-up delay-100">
           <div class="feature-num">I.</div>
           <div class="feature-name">Receipt Scanner</div>
-          <div class="feature-desc">Optical character recognition instantly extracts merchant, date, and amount from physical and digital receipts, tagging expenses automatically.</div>
+          <div class="feature-desc">Optical character recognition instantly extracts merchant, date, and amount from
+            physical and digital receipts, tagging expenses automatically.</div>
         </div>
 
         <div class="feature-row fade-in-up delay-200">
           <div class="feature-num">II.</div>
           <div class="feature-name">Adaptive Budgeting</div>
-          <div class="feature-desc">Dynamic budget engine calculates proportional category spending caps derived from monthly stipend baselines and savings targets.</div>
+          <div class="feature-desc">Dynamic budget engine calculates proportional category spending caps derived from
+            monthly stipend baselines and savings targets.</div>
         </div>
 
         <div class="feature-row fade-in-up delay-300">
           <div class="feature-num">III.</div>
           <div class="feature-name">AI Financial Coach</div>
-          <div class="feature-desc">Context-aware conversational guidance analyzing live transaction velocity, category outliers, and savings progress in natural language.</div>
+          <div class="feature-desc">Context-aware conversational guidance analyzing live transaction velocity, category
+            outliers, and savings progress in natural language.</div>
         </div>
 
         <div class="feature-row fade-in-up delay-400">
           <div class="feature-num">IV.</div>
           <div class="feature-name">What-If Simulator</div>
-          <div class="feature-desc">Test the mathematical impact of planned purchases, allowance changes, and category cuts without modifying your live database records.</div>
+          <div class="feature-desc">Test the mathematical impact of planned purchases, allowance changes, and category
+            cuts without modifying your live database records.</div>
         </div>
       </div>
     </section>
@@ -556,7 +699,8 @@
       <div class="container fade-in-up">
         <h2 class="cta-title">Begin Smart Budgeting Today</h2>
         <p class="cta-desc">
-          Zero-configuration instant access. Experience intelligent financial tracking tailored specifically for student lifestyles.
+          Zero-configuration instant access. Experience intelligent financial tracking tailored specifically for student
+          lifestyles.
         </p>
         <a href="{{ url_for('auth.login') }}" class="btn-pill btn-pill-primary">
           Open Demo Account →
@@ -568,7 +712,7 @@
   <!-- Footer -->
   <footer class="footer container">
     <div class="footer-inner">
-      <div>Budget Buddy · Academic College Project · High-Trust Student Fintech</div>
+      <div>Budget Buddy · High-Trust Student Fintech</div>
       <div>Designed for Educational Budgeting Assistance</div>
     </div>
   </footer>
@@ -577,7 +721,7 @@
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const animatedElements = document.querySelectorAll('.fade-in-up');
-      
+
       const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
           if (entry.isIntersecting) {
@@ -595,4 +739,5 @@
     });
   </script>
 </body>
+
 </html>

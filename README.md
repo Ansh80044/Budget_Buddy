@@ -99,35 +99,26 @@ Open: http://localhost:5000
 
 ## 📁 Project Structure
 
+> 💡 **Detailed Architecture Guide**: See [PROJECT_STRUCTURE.md](file:///e:/projects/Budget_buddy/PROJECT_STRUCTURE.md) for a full layer-by-layer breakdown of every route, service, and component.
+
 ```
 budget-buddy/
 ├── app/
 │   ├── __init__.py         # Flask app factory
-│   ├── routes/             # Flask blueprints
-│   │   ├── auth.py         # Login, register, logout
-│   │   ├── dashboard.py    # Main dashboard
-│   │   ├── transactions.py # Income & expense CRUD
-│   │   ├── budget.py       # Budget management
-│   │   ├── reports.py      # Analytics & charts
-│   │   ├── goals.py        # Savings goals
-│   │   ├── receipt.py      # Receipt scanner
-│   │   ├── ai.py           # AI Financial Coach
-│   │   └── simulator.py    # What-If Simulator
-│   ├── services/           # Business logic
-│   │   ├── supabase_service.py  # DB & auth operations
-│   │   ├── ai_service.py        # OpenAI integration
-│   │   ├── ocr_service.py       # Tesseract OCR
-│   │   ├── analysis_service.py  # Pandas analytics
-│   │   ├── prediction_service.py # Spending prediction
-│   │   └── budget_service.py    # Budget engine
-│   ├── utils/
-│   │   └── helpers.py      # Auth decorator, utilities
+│   ├── routes/             # Flask blueprints (auth, dashboard, transactions, etc.)
+│   ├── services/           # Business logic & AI (supabase, openai, ocr, analytics)
+│   ├── utils/              # Helpers & decorators
 │   ├── templates/          # Jinja2 HTML templates
-│   └── static/             # CSS, JS, images
+│   └── static/             # CSS, images, uploads
+├── components/             # React / shadcn UI components
+├── lib/                    # Frontend utility functions
+├── styles/                 # Tailwind CSS & design tokens
+├── tests/                  # Pytest test suite
 ├── supabase_schema.sql     # Database schema
 ├── requirements.txt
-├── .env.example
-├── run.py                  # Entry point
+├── package.json
+├── tsconfig.json
+├── run.py                  # Server entry point
 └── README.md
 ```
 

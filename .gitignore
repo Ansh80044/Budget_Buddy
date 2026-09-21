@@ -15,3 +15,5 @@ uploads/
 *.pyc
 instance/
 .pytest_cache/
+node_modules/
+.npm
