@@ -1,9 +1,8 @@
 from flask import Blueprint, render_template, request, session, jsonify
-from app.utils.helpers import login_required, get_current_month_year, days_remaining_this_month, safe_float
+from app.utils.helpers import login_required, get_current_month_year, days_remaining_this_month
 from app.services import supabase_service as db
 from app.services import analysis_service, prediction_service, budget_service
 from app.services.ai_service import get_financial_coach_response
-import calendar
 
 ai_bp = Blueprint('ai', __name__)
 

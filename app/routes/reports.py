@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, session, jsonify
 from app.utils.helpers import login_required, get_current_month_year
 from app.services import supabase_service as db
-from app.services import analysis_service, prediction_service, budget_service
+from app.services import analysis_service, prediction_service
 import calendar
 
 reports_bp = Blueprint('reports', __name__)
@@ -39,7 +39,8 @@ def reports():
 
     month_name = calendar.month_name[month]
 
-    return render_template('reports.html',
+    return render_template(
+        'reports.html',
         analysis=analysis,
         all_analysis=all_analysis,
         monthly_income=monthly_income,

@@ -163,9 +163,9 @@ Respond with ONLY a valid JSON object like:
 
 def _heuristic_receipt_parser(text: str) -> dict:
     """Extract receipt details using regex patterns."""
-    lines = [l.strip() for l in (text or '').split('\n') if l.strip()]
+    lines = [line.strip() for line in (text or '').split('\n') if line.strip()]
     merchant = lines[0] if lines else "Store Purchase"
-    
+
     # Try finding amount
     amount = 0.0
     amount_matches = re.findall(r'(?:total|amt|amount|net|inr|rs\.?|₹)?\s*[:=]?\s*(\d+(?:\.\d{1,2})?)', text, re.IGNORECASE)
@@ -246,7 +246,6 @@ def _local_financial_coach_answer(question: str, ctx: dict) -> str:
     avg_daily = ctx.get('avg_daily_spending', 0)
     days_left = ctx.get('days_remaining', 0)
     cat_spending = ctx.get('category_spending', {})
-    goals = ctx.get('goals', [])
 
     # Sort categories by spent amount
     sorted_cats = sorted(cat_spending.items(), key=lambda x: x[1], reverse=True)
@@ -254,41 +253,43 @@ def _local_financial_coach_answer(question: str, ctx: dict) -> str:
 
     if any(k in q for k in ["where", "most", "highest", "top category", "spending the most"]):
         if sorted_cats:
-            cat_list = ", ".join([f"**{c}** (₹{amt:,.0f})" for c, amt in sorted_cats[:3]])
             pct = (top_cat[1] / expenses * 100) if expenses > 0 else 0
+            savings_est = top_cat[1] * 0.15
             return (
-                f"📊 Your highest spending category is **{top_cat[0]}** at **₹{top_cat[1]:,.0f}** "
+                f"Your highest spending category is **{top_cat[0]}** at **₹{top_cat[1]:,.0f}** "
                 f"({pct:.0f}% of your monthly expenses).\n\n"
-                f"Your top 3 spending areas this month:\n"
+                f"**Top spending areas this month:**\n"
                 f"{chr(10).join([f'• **{c}**: ₹{a:,.0f}' for c, a in sorted_cats[:3]])}\n\n"
-                f"💡 **Tip:** Reducing spending in {top_cat[0]} by just 15% would save you approx ₹{top_cat[1]*0.15:,.0f} this month."
+                f"**Optimization Tip:** Reducing spending in {top_cat[0]} by just 15% would save you approx ₹{savings_est:,.0f} this month."
             )
-        return "You don't have any recorded expenses yet this month. Once you add transactions, I will analyze your top spending categories!"
+        return "You don't have any recorded expenses yet this month. Once you add transactions, I will analyze your top spending categories."
 
     elif any(k in q for k in ["save", "saving", "goal", "target"]):
         target = ctx.get('savings_target', 0)
         potential = max(income - expenses, 0)
+        daily_cap = max((remaining - 2000) / max(days_left, 1), 0)
         return (
-            f"🎯 **Savings Analysis for this Month:**\n\n"
+            f"**Savings Analysis for this Month:**\n\n"
             f"• **Monthly Income:** ₹{income:,.0f}\n"
             f"• **Current Expenses:** ₹{expenses:,.0f}\n"
             f"• **Current Surplus:** ₹{potential:,.0f}\n"
             f"• **Savings Target:** ₹{target:,.0f}\n\n"
-            f"To boost your savings by ₹2,000 this month, keep your remaining daily spending under **₹{max((remaining - 2000)/max(days_left, 1), 0):,.0f}/day** for the next {days_left} days."
+            f"To boost your savings by ₹2,000 this month, keep your remaining daily spending under **₹{daily_cap:,.0f}/day** for the next {days_left} days."
         )
 
     elif any(k in q for k in ["overspend", "over budget", "track", "budget summary", "status", "summary"]):
         usage_pct = ctx.get('budget_usage_pct', 0)
-        status_msg = "🚨 You have exceeded your budget." if remaining < 0 else "✅ You are within your budget limit."
+        status_msg = "You have exceeded your monthly budget." if remaining < 0 else "You are within your defined budget limit."
+        daily_limit = max(remaining / max(days_left, 1), 0)
         return (
-            f"📋 **Monthly Budget Health Check:**\n\n"
+            f"**Monthly Budget Health Check:**\n\n"
             f"• **Budget Limit:** ₹{budget:,.0f}\n"
             f"• **Spent So Far:** ₹{expenses:,.0f} ({usage_pct:.0f}% used)\n"
             f"• **Remaining Budget:** ₹{remaining:,.0f}\n"
             f"• **Predicted Month-End Total:** ₹{predicted:,.0f}\n"
             f"• **Days Remaining:** {days_left} days (Avg ₹{avg_daily:,.0f}/day)\n\n"
-            f"{status_msg}\n"
-            f"💡 Recommended daily spend limit for the rest of the month: **₹{max(remaining/max(days_left, 1), 0):,.0f}/day**."
+            f"**Status:** {status_msg}\n"
+            f"Recommended daily spend limit for the rest of the month: **₹{daily_limit:,.0f}/day**."
         )
 
     elif any(k in q for k in ["afford", "buy", "purchase", "can i"]):
@@ -296,31 +297,36 @@ def _local_financial_coach_answer(question: str, ctx: dict) -> str:
         nums = re.findall(r'\d+', q.replace(',', ''))
         amount = float(nums[0]) if nums else 2000
         can_afford = (remaining >= amount)
+        afford_msg = "**Yes, you can afford this within your budget.**" if can_afford else "**This purchase would exceed your monthly budget limit.**"
         return (
-            f"🛍️ **Purchase Evaluation:**\n\n"
-            f"• Remaining budget: **₹{remaining:,.0f}**\n"
-            f"• Evaluation for: **₹{amount:,.0f}**\n\n"
-            f"{'✅ **Yes, you can afford this within your budget!**' if can_afford else '⚠️ **This purchase would put you over your monthly budget.**'}\n"
+            f"**Purchase Evaluation:**\n\n"
+            f"• **Remaining budget:** ₹{remaining:,.0f}\n"
+            f"• **Purchase Amount:** ₹{amount:,.0f}\n\n"
+            f"{afford_msg}\n"
             f"After this purchase, your remaining budget for the next {days_left} days will be **₹{max(remaining - amount, 0):,.0f}**.\n\n"
-            f"💡 Tip: Test this scenario in the **What-If Simulator** to see its full impact on your month-end prediction!"
+            f"Tip: You can test this scenario in the What-If Simulator to evaluate its full month-end projection."
         )
 
     elif any(k in q for k in ["cut", "reduce", "decrease", "less"]):
         if sorted_cats:
+            second_tip = f"2. **{sorted_cats[1][0]}** (₹{sorted_cats[1][1]:,.0f}): Optimize recurring subscriptions or transit.\n" if len(sorted_cats) > 1 else ""
             return (
-                f"✂️ **Suggested Expense Reductions:**\n\n"
+                f"**Suggested Expense Reductions:**\n\n"
                 f"1. **{sorted_cats[0][0]}** (₹{sorted_cats[0][1]:,.0f}): Cut non-essential orders or look for student discounts.\n"
-                + (f"2. **{sorted_cats[1][0]}** (₹{sorted_cats[1][1]:,.0f}): Optimize travel/subscriptions.\n" if len(sorted_cats) > 1 else "")
-                + f"\n💡 Setting per-category limits in the **Budget Planner** helps keep discretionary spending in check."
+                + second_tip
+                + "\nSetting category limits in the Budget Planner helps keep discretionary spending in check."
             )
 
+    bal = income - expenses
     return (
-        f"🤖 **Financial Coach Insight:**\n\n"
-        f"You have spent **₹{expenses:,.0f}** out of your **₹{income:,.0f}** income this month, leaving **₹{income - expenses:,.0f}** in balance with {days_left} days left.\n\n"
-        f"• Top Category: **{top_cat[0]}** (₹{top_cat[1]:,.0f})\n"
-        f"• Average Daily Spending: **₹{avg_daily:,.0f}/day**\n"
-        f"• Predicted Month-End Spend: **₹{predicted:,.0f}**\n\n"
-        f"Feel free to ask specific questions like *'Where am I spending the most?'*, *'How can I save ₹2,000?'*, or *'Can I afford a ₹3,000 purchase?'*!"
+        f"**Financial Coach Insight:**\n\n"
+        f"You have spent **₹{expenses:,.0f}** out of your **₹{income:,.0f}** income this month, "
+        f"leaving **₹{bal:,.0f}** in balance with {days_left} days left.\n\n"
+        f"• **Top Category:** {top_cat[0]} (₹{top_cat[1]:,.0f})\n"
+        f"• **Average Daily Spending:** ₹{avg_daily:,.0f}/day\n"
+        f"• **Predicted Month-End Spend:** ₹{predicted:,.0f}\n\n"
+        f"Feel free to ask questions like *'Where am I spending the most?'*, "
+        f"*'How can I save ₹2,000?'*, or *'Can I afford a ₹3,000 purchase?'*."
     )
 
 

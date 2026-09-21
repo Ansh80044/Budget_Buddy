@@ -7,6 +7,7 @@
   <meta name="description" content="{% block meta_description %}Budget Buddy helps college students track income and expenses, create adaptive budgets, predict spending, and get AI financial guidance.{% endblock %}" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
   {% block head %}{% endblock %}
 </head>
@@ -25,32 +26,40 @@
       <nav class="sidebar-nav">
         <span class="nav-label">Analytics</span>
         <a href="{{ url_for('dashboard.dashboard') }}" class="nav-item {% if request.endpoint == 'dashboard.dashboard' %}active{% endif %}">
-          <span class="nav-icon">📊</span> Overview
+          <svg class="nav-icon-svg" viewBox="0 0 24 24"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+          <span>Overview</span>
         </a>
         <a href="{{ url_for('reports.reports') }}" class="nav-item {% if request.endpoint == 'reports.reports' %}active{% endif %}">
-          <span class="nav-icon">📈</span> Reports & Trends
+          <svg class="nav-icon-svg" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+          <span>Reports & Trends</span>
         </a>
 
         <span class="nav-label">Finance</span>
         <a href="{{ url_for('transactions.transactions') }}" class="nav-item {% if 'transactions' in request.endpoint %}active{% endif %}">
-          <span class="nav-icon">💳</span> Transactions
+          <svg class="nav-icon-svg" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+          <span>Transactions</span>
         </a>
         <a href="{{ url_for('receipt.receipt') }}" class="nav-item {% if request.endpoint == 'receipt.receipt' %}active{% endif %}">
-          <span class="nav-icon">🧾</span> Receipt Scanner
+          <svg class="nav-icon-svg" viewBox="0 0 24 24"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M14 8H8"/><path d="M16 12H8"/><path d="M13 16H8"/></svg>
+          <span>Receipt Scanner</span>
         </a>
         <a href="{{ url_for('budget.budget') }}" class="nav-item {% if request.endpoint == 'budget.budget' %}active{% endif %}">
-          <span class="nav-icon">📋</span> Budget Planner
+          <svg class="nav-icon-svg" viewBox="0 0 24 24"><path d="M12 20v-6M6 20V10M18 20V4"/></svg>
+          <span>Budget Planner</span>
         </a>
         <a href="{{ url_for('goals.goals') }}" class="nav-item {% if request.endpoint == 'goals.goals' %}active{% endif %}">
-          <span class="nav-icon">🎯</span> Savings Goals
+          <svg class="nav-icon-svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+          <span>Savings Goals</span>
         </a>
 
         <span class="nav-label">Decision Support</span>
         <a href="{{ url_for('ai.coach') }}" class="nav-item {% if request.endpoint == 'ai.coach' %}active{% endif %}">
-          <span class="nav-icon">💬</span> AI Financial Coach
+          <svg class="nav-icon-svg" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <span>AI Financial Coach</span>
         </a>
         <a href="{{ url_for('simulator.simulator') }}" class="nav-item {% if request.endpoint == 'simulator.simulator' %}active{% endif %}">
-          <span class="nav-icon">🔮</span> What-If Simulator
+          <svg class="nav-icon-svg" viewBox="0 0 24 24"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+          <span>What-If Simulator</span>
         </a>
       </nav>
 

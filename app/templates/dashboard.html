@@ -11,14 +11,18 @@
     <div class="label">Monthly Income</div>
     <div class="value">₹{{ "{:,.0f}".format(monthly_income) }}</div>
     <div class="meta">{{ month_name }} {{ year }}</div>
-    <div class="icon-chip">💰</div>
+    <div class="icon-chip">
+      <svg viewBox="0 0 24 24"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg>
+    </div>
   </div>
 
   <div class="stat-card">
     <div class="label">Total Spent</div>
     <div class="value {{ 'danger' if budget_summary.is_over_budget else '' }}">₹{{ "{:,.0f}".format(total_expenses) }}</div>
     <div class="meta">{{ "{:.0f}".format(budget_summary.usage_pct) }}% of monthly budget</div>
-    <div class="icon-chip">💳</div>
+    <div class="icon-chip">
+      <svg viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+    </div>
   </div>
 
   <div class="stat-card">
@@ -27,28 +31,36 @@
       ₹{{ "{:,.0f}".format(budget_summary.remaining_budget | abs) }}{{ ' over' if budget_summary.remaining_budget < 0 else '' }}
     </div>
     <div class="meta">Budget target: ₹{{ "{:,.0f}".format(budget_amount) }}</div>
-    <div class="icon-chip">⚖️</div>
+    <div class="icon-chip">
+      <svg viewBox="0 0 24 24"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg>
+    </div>
   </div>
 
   <div class="stat-card">
     <div class="label">Predicted Spending</div>
     <div class="value {{ 'warning' if predicted_spending > budget_amount and budget_amount > 0 else '' }}">₹{{ "{:,.0f}".format(predicted_spending) }}</div>
     <div class="meta">{{ days_remaining }} days remaining</div>
-    <div class="icon-chip">🔮</div>
+    <div class="icon-chip">
+      <svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+    </div>
   </div>
 
   <div class="stat-card">
     <div class="label">Total Saved</div>
     <div class="value success">₹{{ "{:,.0f}".format(total_saved) }}</div>
     <div class="meta">{{ goals | length }} active savings goal{{ 's' if goals | length != 1 else '' }}</div>
-    <div class="icon-chip">🎯</div>
+    <div class="icon-chip">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+    </div>
   </div>
 
   <div class="stat-card">
     <div class="label">Avg Daily Spend</div>
     <div class="value">₹{{ "{:,.0f}".format(avg_daily) }}</div>
     <div class="meta">Across {{ analysis.transaction_count }} recorded expenses</div>
-    <div class="icon-chip">📅</div>
+    <div class="icon-chip">
+      <svg viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+    </div>
   </div>
 </div>
 
@@ -63,14 +75,14 @@
     <a href="{{ url_for('budget.budget') }}" class="btn btn-outline btn-sm">Configure Budget</a>
   </div>
   
-  <div class="progress-bar-bg" style="height: 10px; margin-bottom: 8px;">
+  <div class="progress-bar-bg" style="height: 10px; margin-bottom: 10px;">
     <div class="progress-bar-fill {{ 'danger' if budget_summary.usage_pct > 100 else 'warning' if budget_summary.usage_pct > 75 else 'success' }}"
          style="width: {{ [budget_summary.usage_pct, 100] | min }}%;"></div>
   </div>
   
-  <div class="d-flex justify-between" style="font-size: 0.75rem; color: var(--text-secondary);">
+  <div class="d-flex justify-between" style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 500;">
     <span>₹0</span>
-    <span style="font-weight: 600; color: {{ 'var(--danger)' if budget_summary.usage_pct > 100 else 'var(--warning)' if budget_summary.usage_pct > 75 else 'var(--success)' }};">
+    <span style="font-weight: 700; color: {{ 'var(--danger)' if budget_summary.usage_pct > 100 else 'var(--warning)' if budget_summary.usage_pct > 75 else 'var(--success)' }};">
       {{ "{:.1f}".format(budget_summary.usage_pct) }}% Utilized
     </span>
     <span>Limit: ₹{{ "{:,.0f}".format(budget_amount) }}</span>
@@ -104,7 +116,9 @@
       </div>
     {% else %}
       <div class="empty-state" style="padding: 32px 16px;">
-        <div class="icon">✅</div>
+        <div class="icon">
+          <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        </div>
         <h5>No Budget Risks Detected</h5>
         <p>Your current spending trajectory is well within your defined monthly budget parameters.</p>
       </div>
@@ -127,7 +141,9 @@
     </div>
     {% else %}
     <div class="empty-state" style="padding: 32px 16px;">
-      <div class="icon">📊</div>
+      <div class="icon">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 10 10h-10z"/></svg>
+      </div>
       <h5>No Category Data Available</h5>
       <p>Add your first expense transaction to view category spending breakdown.</p>
       <a href="{{ url_for('transactions.transactions') }}" class="btn btn-primary btn-sm mt-8">+ Add Expense</a>
@@ -163,7 +179,7 @@
           {% for tx in recent_transactions[:5] %}
           <tr>
             <td>
-              <div style="font-weight: 500;">{{ tx.description[:28] }}{{ '...' if tx.description|length > 28 else '' }}</div>
+              <div style="font-weight: 600; color: var(--text);">{{ tx.description[:28] }}{{ '...' if tx.description|length > 28 else '' }}</div>
             </td>
             <td>
               {% if tx.category %}
@@ -173,7 +189,7 @@
               {% endif %}
             </td>
             <td style="color: var(--text-secondary); font-size: 0.8125rem;">{{ tx.date }}</td>
-            <td style="text-align: right; font-weight: 600; color: {{ 'var(--success)' if tx.type == 'income' else 'var(--danger)' }};">
+            <td style="text-align: right; font-weight: 700; color: {{ 'var(--success)' if tx.type == 'income' else 'var(--danger)' }};">
               {{ '+' if tx.type == 'income' else '-' }}₹{{ "{:,.0f}".format(tx.amount) }}
             </td>
           </tr>
@@ -183,7 +199,9 @@
     </div>
     {% else %}
     <div class="empty-state" style="padding: 32px 16px;">
-      <div class="icon">💳</div>
+      <div class="icon">
+        <svg viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+      </div>
       <h5>No Transactions Recorded</h5>
       <p>Start recording your daily income and expenses.</p>
       <a href="{{ url_for('transactions.transactions') }}" class="btn btn-primary btn-sm mt-8">+ Add Transaction</a>
@@ -207,13 +225,13 @@
       {% set pct = [(goal.saved_amount / goal.target_amount * 100) if goal.target_amount else 0, 100] | min %}
       <div style="border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; background-color: var(--surface);">
         <div class="d-flex justify-between align-center mb-8">
-          <div style="font-weight: 600; font-size: 0.875rem;">{{ goal.name }}</div>
+          <div style="font-weight: 700; font-size: 0.875rem;">{{ goal.name }}</div>
           <span class="badge {{ 'badge-success' if pct >= 100 else 'badge-primary' }}">{{ "{:.0f}".format(pct) }}%</span>
         </div>
         <div class="progress-bar-bg" style="height: 6px; margin-bottom: 8px;">
           <div class="progress-bar-fill {{ 'success' if pct >= 100 else '' }}" style="width: {{ pct }}%;"></div>
         </div>
-        <div class="d-flex justify-between" style="font-size: 0.75rem; color: var(--text-secondary);">
+        <div class="d-flex justify-between" style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 500;">
           <span>Saved: ₹{{ "{:,.0f}".format(goal.saved_amount) }}</span>
           <span>Target: ₹{{ "{:,.0f}".format(goal.target_amount) }}</span>
         </div>
@@ -222,7 +240,9 @@
     </div>
     {% else %}
     <div class="empty-state" style="padding: 32px 16px;">
-      <div class="icon">🎯</div>
+      <div class="icon">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+      </div>
       <h5>No Savings Goals Set</h5>
       <p>Create a savings goal to track your milestone purchases.</p>
       <a href="{{ url_for('goals.goals') }}" class="btn btn-primary btn-sm mt-8">+ Create Goal</a>
@@ -234,12 +254,34 @@
 
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script id="dash-category-data" type="application/json">
+  {{ category_spending | tojson }}
+</script>
 <script>
-  const categoryData = {{ category_spending | tojson }};
+  const catEl = document.getElementById('dash-category-data');
+  const categoryData = catEl ? JSON.parse(catEl.textContent.trim()) : {};
   if (categoryData && Object.keys(categoryData).length > 0) {
     const labels = Object.keys(categoryData);
     const values = Object.values(categoryData);
-    const palette = ['#0F172A','#16A34A','#D97706','#DC2626','#475569','#0284C7','#9333EA','#EA580C','#65A30D','#0D9488','#E11D48','#64748B'];
+    const categoryColorMap = {
+      'Education': '#38BDF8', // Light Blue
+      'Food & Dining': '#EA580C',
+      'Transportation': '#16A34A',
+      'Groceries': '#0D9488',
+      'Shopping': '#EC4899',
+      'Entertainment': '#8B5CF6',
+      'Utilities': '#D97706',
+      'Health & Medical': '#DC2626',
+      'Subscriptions': '#6366F1',
+      'Rent & Housing': '#475569',
+      'Personal Care': '#06B6D4',
+      'Travel': '#2563EB',
+      'Sports & Fitness': '#65A30D',
+      'Gifts & Donations': '#A855F7',
+      'Other': '#64748B'
+    };
+    const fallbackPalette = ['#38BDF8','#16A34A','#D97706','#DC2626','#475569','#0284C7','#9333EA','#EA580C','#65A30D','#0D9488'];
+    const backgroundColors = labels.map((cat, idx) => categoryColorMap[cat] || fallbackPalette[idx % fallbackPalette.length]);
 
     new Chart(document.getElementById('categoryChart'), {
       type: 'doughnut',
@@ -247,21 +289,21 @@
         labels: labels,
         datasets: [{
           data: values,
-          backgroundColor: palette.slice(0, labels.length),
-          borderWidth: 1,
-          borderColor: '#E5E7EB'
+          backgroundColor: backgroundColors,
+          borderWidth: 2,
+          borderColor: '#FFFFFF'
         }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        cutout: '70%',
+        cutout: '72%',
         plugins: {
           legend: {
             position: 'right',
             labels: {
-              font: { family: 'Poppins', size: 11 },
-              boxWidth: 12,
+              font: { family: 'Plus Jakarta Sans', size: 11, weight: '500' },
+              boxWidth: 10,
               padding: 10
             }
           },

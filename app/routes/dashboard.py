@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, session
-from app.utils.helpers import login_required, get_current_month_year, days_elapsed_this_month, days_remaining_this_month
+from app.utils.helpers import login_required, get_current_month_year, days_elapsed_this_month
 from app.services import supabase_service as db
 from app.services import analysis_service, prediction_service, budget_service
 import calendar
@@ -64,7 +64,8 @@ def dashboard():
 
     month_name = calendar.month_name[month]
 
-    return render_template('dashboard.html',
+    return render_template(
+        'dashboard.html',
         profile=profile,
         monthly_income=monthly_income,
         total_expenses=total_expenses,

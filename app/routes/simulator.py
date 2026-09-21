@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, session, jsonify
 from app.utils.helpers import login_required, safe_float, get_current_month_year
 from app.services import supabase_service as db
-from app.services import analysis_service, budget_service, prediction_service
+from app.services import analysis_service
 import calendar
 
 simulator_bp = Blueprint('simulator', __name__)
@@ -28,7 +28,8 @@ def simulator():
 
     goals = db.get_goals(user_id)
 
-    return render_template('simulator.html',
+    return render_template(
+        'simulator.html',
         monthly_income=monthly_income,
         total_expenses=total_expenses,
         current_balance=current_balance,
@@ -50,16 +51,14 @@ def run_simulation():
     user_id = session['user_id']
     data = request.get_json()
 
-    scenario = data.get('scenario', 'purchase')  # purchase | reduce_category | increase_income | savings_boost | change_budget
+    scenario = data.get('scenario', 'purchase')
 
     year, month = get_current_month_year()
     profile = db.get_profile(user_id)
     monthly_income = float(profile.get('monthly_income', 0)) if profile else 0.0
 
     month_tx = db.get_transactions_by_month(user_id, year, month)
-    all_tx = db.get_transactions(user_id, limit=500)
     analysis = analysis_service.analyze_spending(month_tx, year, month)
-    all_analysis = analysis_service.analyze_spending(all_tx)
 
     budget = db.get_budget(user_id, year, month)
     budget_amount = float(budget['amount']) if budget else 0.0

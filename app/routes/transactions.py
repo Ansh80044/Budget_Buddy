@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, jsonify
-from app.utils.helpers import login_required, safe_float, success_response, error_response
+from app.utils.helpers import login_required, safe_float, success_response
 from app.services import supabase_service as db
 from app.services.ai_service import categorize_expense, EXPENSE_CATEGORIES
 from datetime import date
@@ -12,7 +12,8 @@ transactions_bp = Blueprint('transactions', __name__)
 def transactions():
     user_id = session['user_id']
     all_tx = db.get_transactions(user_id, limit=500)
-    return render_template('transactions.html',
+    return render_template(
+        'transactions.html',
         transactions=all_tx,
         categories=EXPENSE_CATEGORIES,
         today=str(date.today())
@@ -88,7 +89,8 @@ def edit_transaction(transaction_id):
             flash(f'Error: {str(e)}', 'error')
         return redirect(url_for('transactions.transactions'))
 
-    return render_template('transactions.html',
+    return render_template(
+        'transactions.html',
         edit_tx=tx,
         transactions=db.get_transactions(user_id, limit=500),
         categories=EXPENSE_CATEGORIES,

@@ -1,9 +1,12 @@
-from datetime import date
-import calendar
+# Budget Buddy — Adaptive Budget Recommendation & Risk Detection Service
 
 
-def generate_budget_recommendation(monthly_income: float, savings_target: float,
-                                    category_spending: dict, prev_months_avg: float = None) -> dict:
+def generate_budget_recommendation(
+    monthly_income: float,
+    savings_target: float,
+    category_spending: dict,
+    prev_months_avg: float = None
+) -> dict:
     """
     Recommend a budget based on:
     - Monthly income
@@ -59,11 +62,17 @@ def _generate_budget_notes(income: float, savings: float, available: float) -> l
     return notes
 
 
-def detect_budget_risks(current_spending: float, budget_amount: float,
-                         predicted_spending: float, savings_target: float,
-                         monthly_income: float, days_elapsed: int,
-                         days_in_month: int, category_spending: dict,
-                         budget_categories: list) -> list:
+def detect_budget_risks(
+    current_spending: float,
+    budget_amount: float,
+    predicted_spending: float,
+    savings_target: float,
+    monthly_income: float,
+    days_elapsed: int,
+    days_in_month: int,
+    category_spending: dict,
+    budget_categories: list
+) -> list:
     """
     Detect predefined budget risk conditions and return list of risk messages.
     """
@@ -76,18 +85,18 @@ def detect_budget_risks(current_spending: float, budget_amount: float,
 
     # Risk 1: Rapid budget usage
     if usage_pct >= 80 and pct_month_elapsed < 70:
-        risks.append(f"⚡ Rapid spending: {usage_pct:.0f}% of budget used with {days_in_month - days_elapsed} days remaining.")
+        risks.append(f"Rapid spending: {usage_pct:.0f}% of budget used with {days_in_month - days_elapsed} days remaining.")
 
     # Risk 2: Predicted budget overflow
     if predicted_spending > budget_amount:
         overflow = predicted_spending - budget_amount
-        risks.append(f"🔮 Prediction alert: Estimated to overspend by ₹{overflow:,.0f} this month.")
+        risks.append(f"Prediction alert: Estimated to overspend by ₹{overflow:,.0f} this month.")
 
     # Risk 3: Savings target risk
     potential_savings = monthly_income - predicted_spending
     if potential_savings < savings_target and savings_target > 0:
         shortfall = savings_target - potential_savings
-        risks.append(f"🎯 Savings risk: Predicted to fall ₹{shortfall:,.0f} short of your savings target.")
+        risks.append(f"Savings risk: Predicted to fall ₹{shortfall:,.0f} short of your savings target.")
 
     # Risk 4: Category limit violations
     cat_limits = {bc['category']: bc['limit_amount'] for bc in (budget_categories or [])}
@@ -95,11 +104,11 @@ def detect_budget_risks(current_spending: float, budget_amount: float,
         limit = cat_limits.get(cat)
         if limit and spent > limit:
             over = spent - limit
-            risks.append(f"📊 {cat} over limit: Spent ₹{spent:,.0f} vs limit ₹{limit:,.0f} (₹{over:,.0f} over).")
+            risks.append(f"{cat} over limit: Spent ₹{spent:,.0f} vs limit ₹{limit:,.0f} (₹{over:,.0f} over).")
 
     # Risk 5: General overspending (> 100%)
     if usage_pct > 100:
-        risks.append(f"🚨 Over budget: You've exceeded your monthly budget by ₹{current_spending - budget_amount:,.0f}.")
+        risks.append(f"Over budget: You've exceeded your monthly budget by ₹{current_spending - budget_amount:,.0f}.")
 
     return risks
 

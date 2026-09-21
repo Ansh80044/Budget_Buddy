@@ -3,203 +3,596 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Budget Buddy — Smart Student Finance Management</title>
-  <meta name="description" content="Budget Buddy helps college students track income and expenses, create adaptive budgets, predict spending, and get personalized AI financial guidance." />
+  <title>Budget Buddy — High-Trust Student Financial Intelligence</title>
+  <meta name="description" content="A premium, editorial financial management platform engineered for college students. Track expenses, forecast monthly cash flow, and simulate financial decisions." />
+  
+  <!-- Typography: Playfair Display (Headings) & Plus Jakarta Sans (Body) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
   <style>
-    .landing-header {
-      background-color: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 16px 48px;
+    /* ── Editorial High-Trust Fintech Design System ───────────────────────── */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #FFFFFF;
+      --surface: #FFFFFF;
+      --text-main: #111827;
+      --text-muted: #4B5563;
+      --divider: #111827;
+      --divider-light: #E5E7EB;
+      --btn-bg: #000000;
+      --btn-text: #FFFFFF;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-weight: 400;
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overflow-x: hidden;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-weight: 600;
+      color: var(--text-main);
+      line-height: 1.25;
+      letter-spacing: -0.015em;
+    }
+
+    p {
+      color: var(--text-muted);
+      font-size: 1rem;
+      line-height: 1.8;
+    }
+
+    a {
+      text-decoration: none;
+      color: inherit;
+      transition: opacity 0.15s ease;
+    }
+
+    a:hover {
+      opacity: 0.75;
+    }
+
+    /* ── Upward Scroll Motion Animations (Continuous On-Scroll) ────────── */
+    .fade-in-up {
+      opacity: 0;
+      transform: translateY(36px);
+      transition: opacity 0.35s ease-out, transform 0.35s ease-out;
+      transition-delay: 0s;
+      will-change: opacity, transform;
+    }
+
+    .fade-in-up.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+      transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1), transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Staggered entrance delays active only when visible */
+    .fade-in-up.is-visible.delay-100 { transition-delay: 0.1s; }
+    .fade-in-up.is-visible.delay-200 { transition-delay: 0.2s; }
+    .fade-in-up.is-visible.delay-300 { transition-delay: 0.3s; }
+    .fade-in-up.is-visible.delay-400 { transition-delay: 0.4s; }
+    .fade-in-up.is-visible.delay-500 { transition-delay: 0.5s; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .fade-in-up {
+        opacity: 1 !important;
+        transform: none !important;
+        transition: none !important;
+      }
+    }
+
+    /* ── Container & Macro Whitespace ─────────────────────────────────────── */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 40px;
+    }
+
+    .macro-section {
+      padding: 110px 0;
+    }
+
+    /* ── 1px Editorial Horizontal Dividers ───────────────────────────────── */
+    .editorial-divider {
+      width: 100%;
+      height: 1px;
+      background-color: var(--divider);
+      border: none;
+      margin: 0;
+    }
+
+    .editorial-divider-light {
+      width: 100%;
+      height: 1px;
+      background-color: var(--divider-light);
+      border: none;
+      margin: 0;
+    }
+
+    /* ── Pill-Shaped Solid Buttons (No Shadows) ──────────────────────────── */
+    .btn-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 14px 32px;
+      border-radius: 9999px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.9375rem;
+      font-weight: 500;
+      letter-spacing: 0.01em;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: none !important;
+    }
+
+    .btn-pill-primary {
+      background-color: var(--btn-bg);
+      color: var(--btn-text);
+      border: 1px solid var(--btn-bg);
+    }
+
+    .btn-pill-primary:hover {
+      background-color: #1F2937;
+      border-color: #1F2937;
+      color: #FFFFFF;
+      transform: translateY(-2px);
+      opacity: 1;
+    }
+
+    .btn-pill-outline {
+      background-color: transparent;
+      color: var(--text-main);
+      border: 1px solid var(--text-main);
+    }
+
+    .btn-pill-outline:hover {
+      background-color: var(--text-main);
+      color: #FFFFFF;
+      transform: translateY(-2px);
+      opacity: 1;
+    }
+
+    /* ── Navigation Header ────────────────────────────────────────────────── */
+    .navbar {
+      background-color: var(--bg);
+      padding: 28px 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(8px);
+    }
+
+    .nav-inner {
       display: flex;
       align-items: center;
       justify-content: space-between;
     }
-    .hero-section {
-      padding: 80px 48px;
-      text-align: center;
-      background-color: var(--surface);
-      border-bottom: 1px solid var(--border);
-    }
-    .hero-title {
-      font-size: 2.75rem;
-      font-weight: 600;
-      color: var(--text);
-      max-width: 720px;
-      margin: 0 auto 16px;
+
+    .brand-mark {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.35rem;
+      font-weight: 700;
       letter-spacing: -0.02em;
-      line-height: 1.2;
-    }
-    .hero-desc {
-      font-size: 1.125rem;
-      color: var(--text-secondary);
-      max-width: 580px;
-      margin: 0 auto 32px;
-      line-height: 1.6;
-    }
-    .feature-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: 24px;
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 64px 48px;
-    }
-    .feature-card {
-      background-color: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-card);
-      padding: 32px;
-      box-shadow: var(--shadow-card);
-    }
-    .feature-card .chip {
-      display: inline-flex;
+      color: var(--text-main);
+      display: flex;
       align-items: center;
-      justify-content: center;
-      width: 40px;
-      height: 40px;
-      border-radius: var(--radius-sm);
-      background-color: var(--primary-subtle);
-      color: var(--primary);
-      font-size: 1.125rem;
-      font-weight: 600;
-      margin-bottom: 16px;
+      gap: 8px;
     }
-    .feature-card h3 {
+
+    .brand-mark span {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: var(--text-main);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    /* ── Hero Section with 3D Imagery ─────────────────────────────────────── */
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      align-items: center;
+      gap: 64px;
+      padding: 80px 0 100px;
+    }
+
+    .hero-kicker {
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-main);
+      margin-bottom: 24px;
+    }
+
+    .hero-title {
+      font-size: 3.5rem;
+      line-height: 1.15;
+      margin-bottom: 28px;
+    }
+
+    .hero-subtitle {
       font-size: 1.125rem;
+      max-width: 520px;
+      margin-bottom: 40px;
+      color: var(--text-muted);
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .hero-image-wrapper {
+      position: relative;
+      text-align: center;
+    }
+
+    .hero-3d-img {
+      width: 100%;
+      max-width: 540px;
+      height: auto;
+      display: block;
+      margin: 0 auto;
+      transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .hero-3d-img:hover {
+      transform: translateY(-6px) scale(1.02);
+    }
+
+    /* ── Editorial Section Layouts ───────────────────────────────────────── */
+    .editorial-header {
+      margin-bottom: 64px;
+    }
+
+    .editorial-header .kicker {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    .editorial-header h2 {
+      font-size: 2.25rem;
+    }
+
+    /* ── Editorial High-Trust Features Row ───────────────────────────────── */
+    .feature-list {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .feature-row {
+      display: grid;
+      grid-template-columns: 80px 280px 1fr;
+      align-items: baseline;
+      padding: 36px 0;
+      border-top: 1px solid var(--divider-light);
+    }
+
+    .feature-row:last-child {
+      border-bottom: 1px solid var(--divider-light);
+    }
+
+    .feature-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.25rem;
+      font-style: italic;
+      color: var(--text-muted);
+    }
+
+    .feature-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.35rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .feature-desc {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      max-width: 620px;
+    }
+
+    /* ── Methodology Timeline ────────────────────────────────────────────── */
+    .methodology-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 40px;
+      margin-top: 48px;
+    }
+
+    .methodology-step {
+      padding-top: 24px;
+      border-top: 1px solid var(--divider);
+    }
+
+    .step-index {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
       margin-bottom: 8px;
     }
-    .flow-wrapper {
-      background-color: var(--bg);
-      border-bottom: 1px solid var(--border);
-      padding: 64px 48px;
-      text-align: center;
+
+    .step-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 8px;
     }
-    .flow-steps {
-      display: flex;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 12px;
-      max-width: 960px;
-      margin: 32px auto 0;
-    }
-    .step-pill {
-      background-color: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 10px 16px;
+
+    .step-text {
       font-size: 0.875rem;
-      font-weight: 500;
-      color: var(--text);
+      color: var(--text-muted);
+      line-height: 1.6;
     }
-    .landing-footer {
-      background-color: var(--surface);
-      border-top: 1px solid var(--border);
-      padding: 32px 48px;
+
+    /* ── High-Trust CTA Banner ───────────────────────────────────────────── */
+    .cta-section {
       text-align: center;
+      padding: 120px 0;
+      border-top: 1px solid var(--divider);
+      border-bottom: 1px solid var(--divider);
+    }
+
+    .cta-title {
+      font-size: 2.75rem;
+      margin-bottom: 20px;
+    }
+
+    .cta-desc {
+      font-size: 1.1rem;
+      max-width: 580px;
+      margin: 0 auto 36px;
+    }
+
+    /* ── Editorial Footer ────────────────────────────────────────────────── */
+    .footer {
+      padding: 60px 0 40px;
+      background-color: var(--bg);
+    }
+
+    .footer-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       font-size: 0.8125rem;
-      color: var(--text-secondary);
+      color: var(--text-muted);
+    }
+
+    /* ── Responsive ──────────────────────────────────────────────────────── */
+    @media (max-width: 992px) {
+      .hero-grid {
+        grid-template-columns: 1fr;
+        padding: 40px 0 60px;
+        text-align: center;
+      }
+      .hero-subtitle {
+        margin: 0 auto 32px;
+      }
+      .hero-actions {
+        justify-content: center;
+      }
+      .feature-row {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      .methodology-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .hero-title {
+        font-size: 2.5rem;
+      }
+      .methodology-grid {
+        grid-template-columns: 1fr;
+      }
+      .container {
+        padding: 0 24px;
+      }
+      .hero-actions {
+        flex-direction: column;
+        width: 100%;
+      }
+      .btn-pill {
+        width: 100%;
+      }
     }
   </style>
 </head>
 <body>
 
-  <!-- Navigation Header -->
-  <header class="landing-header">
-    <div class="d-flex align-center gap-12">
-      <div class="logo-badge">B</div>
-      <div>
-        <div class="logo-title">Budget Buddy</div>
-        <div class="logo-sub">College Financial Management</div>
+  <!-- Navigation -->
+  <header class="navbar">
+    <div class="container nav-inner">
+      <a href="{{ url_for('auth.index') }}" class="brand-mark">
+        Budget Buddy <span></span>
+      </a>
+      <div class="nav-links">
+        <a href="{{ url_for('auth.login') }}">Sign In</a>
+        <a href="{{ url_for('auth.register') }}" class="btn-pill btn-pill-primary" style="padding: 10px 24px; font-size: 0.875rem;">
+          Get Started
+        </a>
       </div>
-    </div>
-    <div class="d-flex align-center gap-12">
-      <a href="{{ url_for('auth.login') }}" class="btn btn-outline">Sign In</a>
-      <a href="{{ url_for('auth.register') }}" class="btn btn-primary">Get Started</a>
     </div>
   </header>
 
-  <!-- Hero Section -->
-  <section class="hero-section">
-    <div class="badge badge-primary" style="margin-bottom: 16px; padding: 4px 12px; font-size: 0.8125rem;">
-      Smart College Budgeting Platform
-    </div>
-    <h1 class="hero-title">Manage your college finances with clarity and foresight</h1>
-    <p class="hero-desc">
-      Track daily income & expenses, get behavior-based adaptive budgets, predict month-end spending, and simulate financial choices with AI guidance.
-    </p>
-    <div class="d-flex justify-between align-center gap-12" style="justify-content: center;">
-      <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-lg">
-        Open Demo Dashboard →
-      </a>
-      <a href="{{ url_for('auth.register') }}" class="btn btn-outline btn-lg">
-        Create Student Account
-      </a>
-    </div>
-  </section>
+  <hr class="editorial-divider-light" />
 
-  <!-- Flow Section -->
-  <section class="flow-wrapper">
-    <h2>Core Methodology</h2>
-    <p style="margin-top: 6px;">A structured approach engineered specifically for student financial lifecycles</p>
-    <div class="flow-steps">
-      <div class="step-pill">1. Track Expenses</div>
-      <div class="step-pill">2. Auto-Categorize</div>
-      <div class="step-pill">3. Analyze Patterns</div>
-      <div class="step-pill">4. Adapt Budget</div>
-      <div class="step-pill">5. Predict Spending</div>
-      <div class="step-pill">6. AI Financial Advice</div>
-      <div class="step-pill">7. What-If Simulator</div>
-    </div>
-  </section>
+  <!-- Hero Section with 3D Imagery -->
+  <main>
+    <section class="container">
+      <div class="hero-grid">
+        <div>
+          <div class="hero-kicker fade-in-up">High-Trust Student Fintech</div>
+          <h1 class="hero-title fade-in-up delay-100">Financial clarity designed for college life.</h1>
+          <p class="hero-subtitle fade-in-up delay-200">
+            An editorial financial intelligence platform for university students. Track income and expenses, generate adaptive budgets, forecast month-end cash flow, and simulate major decisions.
+          </p>
+          <div class="hero-actions fade-in-up delay-300">
+            <a href="{{ url_for('auth.login') }}" class="btn-pill btn-pill-primary">
+              Launch Demo Dashboard →
+            </a>
+            <a href="{{ url_for('auth.register') }}" class="btn-pill btn-pill-outline">
+              Create Account
+            </a>
+          </div>
+        </div>
+        <div class="hero-image-wrapper fade-in-up delay-200">
+          <img src="{{ url_for('static', filename='images/hero_3d_fintech.jpg') }}" alt="3D Minimalist Financial Asset" class="hero-3d-img" />
+        </div>
+      </div>
+    </section>
 
-  <!-- Features Grid -->
-  <section style="background-color: var(--bg);">
-    <div class="feature-grid">
-      <div class="feature-card">
-        <div class="chip">1</div>
-        <h3>Receipt Scanner (OCR)</h3>
-        <p>Upload any receipt image. The OCR extracts the merchant, date, and amount, then auto-categorizes the expense for your review.</p>
+    <hr class="editorial-divider" />
+
+    <!-- Methodology Architecture -->
+    <section class="macro-section container">
+      <div class="editorial-header fade-in-up">
+        <div class="kicker">Core Principles</div>
+        <h2>Structured Student Financial Discipline</h2>
       </div>
 
-      <div class="feature-card">
-        <div class="chip">2</div>
-        <h3>AI Expense Categorization</h3>
-        <p>Automatically classifies transactions into Indian student spending categories like Food & Dining, Travel, Groceries, and Education.</p>
+      <div class="methodology-grid">
+        <div class="methodology-step fade-in-up delay-100">
+          <div class="step-index">01 · Capture</div>
+          <div class="step-title">Frictionless Tracking</div>
+          <div class="step-text">Ingest daily expenditures and allowances through instant entry or automated receipt OCR processing.</div>
+        </div>
+
+        <div class="methodology-step fade-in-up delay-200">
+          <div class="step-index">02 · Understand</div>
+          <div class="step-title">Pattern Discovery</div>
+          <div class="step-text">Automatic categorization into student-focused verticals like food, campus transit, and course materials.</div>
+        </div>
+
+        <div class="methodology-step fade-in-up delay-300">
+          <div class="step-index">03 · Forecast</div>
+          <div class="step-title">Predictive Trajectory</div>
+          <div class="step-text">Mathematical month-end projections alert you to potential budget overruns before they materialize.</div>
+        </div>
+
+        <div class="methodology-step fade-in-up delay-400">
+          <div class="step-index">04 · Simulate</div>
+          <div class="step-title">Decision Testing</div>
+          <div class="step-text">Evaluate discretionary purchases and savings target adjustments with real-time what-if simulations.</div>
+        </div>
+      </div>
+    </section>
+
+    <hr class="editorial-divider-light" />
+
+    <!-- Feature Rows -->
+    <section class="macro-section container">
+      <div class="editorial-header fade-in-up">
+        <div class="kicker">Functional Capabilities</div>
+        <h2>Engineered for High-Trust Financial Control</h2>
       </div>
 
-      <div class="feature-card">
-        <div class="chip">3</div>
-        <h3>Adaptive Budget Engine</h3>
-        <p>Recommends realistic spending limits based on monthly allowance, category spending history, and savings targets.</p>
-      </div>
+      <div class="feature-list">
+        <div class="feature-row fade-in-up delay-100">
+          <div class="feature-num">I.</div>
+          <div class="feature-name">Receipt Scanner</div>
+          <div class="feature-desc">Optical character recognition instantly extracts merchant, date, and amount from physical and digital receipts, tagging expenses automatically.</div>
+        </div>
 
-      <div class="feature-card">
-        <div class="chip">4</div>
-        <h3>Spending Prediction</h3>
-        <p>Estimates expected total month-end expenditure and alerts you early if you are at risk of exceeding your budget.</p>
-      </div>
+        <div class="feature-row fade-in-up delay-200">
+          <div class="feature-num">II.</div>
+          <div class="feature-name">Adaptive Budgeting</div>
+          <div class="feature-desc">Dynamic budget engine calculates proportional category spending caps derived from monthly stipend baselines and savings targets.</div>
+        </div>
 
-      <div class="feature-card">
-        <div class="chip">5</div>
-        <h3>AI Financial Coach</h3>
-        <p>Ask natural-language questions about your actual data: "Where am I spending most?", "Can I afford ₹3,000 headphones?", or "How to save ₹2,000?"</p>
-      </div>
+        <div class="feature-row fade-in-up delay-300">
+          <div class="feature-num">III.</div>
+          <div class="feature-name">AI Financial Coach</div>
+          <div class="feature-desc">Context-aware conversational guidance analyzing live transaction velocity, category outliers, and savings progress in natural language.</div>
+        </div>
 
-      <div class="feature-card">
-        <div class="chip">6</div>
-        <h3>What-If Simulator</h3>
-        <p>Test hypothetical purchasing and saving decisions in real-time without modifying your actual recorded transactions.</p>
+        <div class="feature-row fade-in-up delay-400">
+          <div class="feature-num">IV.</div>
+          <div class="feature-name">What-If Simulator</div>
+          <div class="feature-desc">Test the mathematical impact of planned purchases, allowance changes, and category cuts without modifying your live database records.</div>
+        </div>
       </div>
-    </div>
-  </section>
+    </section>
+
+    <!-- Call to Action Banner -->
+    <section class="cta-section">
+      <div class="container fade-in-up">
+        <h2 class="cta-title">Begin Smart Budgeting Today</h2>
+        <p class="cta-desc">
+          Zero-configuration instant access. Experience intelligent financial tracking tailored specifically for student lifestyles.
+        </p>
+        <a href="{{ url_for('auth.login') }}" class="btn-pill btn-pill-primary">
+          Open Demo Account →
+        </a>
+      </div>
+    </section>
+  </main>
 
   <!-- Footer -->
-  <footer class="landing-footer">
-    <p>Budget Buddy · Academic College Project · Designed for educational budgeting assistance</p>
+  <footer class="footer container">
+    <div class="footer-inner">
+      <div>Budget Buddy · Academic College Project · High-Trust Student Fintech</div>
+      <div>Designed for Educational Budgeting Assistance</div>
+    </div>
   </footer>
 
+  <!-- Scroll-Triggered Upward Motion Observer -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const animatedElements = document.querySelectorAll('.fade-in-up');
+      
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+          } else {
+            entry.target.classList.remove('is-visible');
+          }
+        });
+      }, {
+        threshold: 0.08,
+        rootMargin: '0px 0px -30px 0px'
+      });
+
+      animatedElements.forEach(el => observer.observe(el));
+    });
+  </script>
 </body>
 </html>

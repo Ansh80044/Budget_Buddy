@@ -1,4 +1,3 @@
-import os
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, jsonify
 from app.utils.helpers import login_required, safe_float
 from app.services.ocr_service import extract_text_from_image
@@ -31,14 +30,19 @@ def scan_receipt():
 
     # OCR
     ocr_text = extract_text_from_image(image_bytes)
-    
+
     # Fallback to smart sample receipt parser if Tesseract OCR is not installed locally
     if not ocr_text:
+        d_str = str(date.today())
         sample_receipts = [
-            ("STARBUCKS COFFEE INDIA\nCafe Latte (Grande) - ₹340.00\nBlueberry Muffin - ₹210.00\nSubtotal: ₹550.00\nGST (5%): ₹27.50\nTOTAL: ₹577.50\nDate: " + str(date.today()), "Starbucks Coffee", 577.50, "Food & Dining"),
-            ("DECATHLON SPORTS INDIA\nRunning Socks 3-Pack - ₹299.00\nWater Bottle 750ml - ₹399.00\nTotal Items: 2\nTOTAL AMOUNT: ₹698.00\nDate: " + str(date.today()), "Decathlon Sports", 698.00, "Sports & Fitness"),
-            ("CROSSWORD BOOKSTORE\nClean Code (Robert C. Martin) - ₹899.00\nSpiral Notebooks - ₹250.00\nTOTAL: ₹1149.00\nDate: " + str(date.today()), "Crossword Bookstore", 1149.00, "Education"),
-            ("BLINKIT INSTANT GROCERY\nAmul Milk 1L - ₹66.00\nBread & Butter - ₹110.00\nSnacks - ₹220.00\nOrder Total: ₹396.00\nDate: " + str(date.today()), "Blinkit Grocery", 396.00, "Groceries")
+            (f"STARBUCKS COFFEE INDIA\nCafe Latte (Grande) - ₹340.00\nBlueberry Muffin - ₹210.00\nTOTAL: ₹577.50\nDate: {d_str}",
+             "Starbucks Coffee", 577.50, "Food & Dining"),
+            (f"DECATHLON SPORTS INDIA\nRunning Socks 3-Pack - ₹299.00\nWater Bottle 750ml - ₹399.00\nTOTAL: ₹698.00\nDate: {d_str}",
+             "Decathlon Sports", 698.00, "Sports & Fitness"),
+            (f"CROSSWORD BOOKSTORE\nClean Code (Robert C. Martin) - ₹899.00\nTOTAL: ₹1149.00\nDate: {d_str}",
+             "Crossword Bookstore", 1149.00, "Education"),
+            (f"BLINKIT INSTANT GROCERY\nAmul Milk 1L - ₹66.00\nBread & Butter - ₹110.00\nTOTAL: ₹396.00\nDate: {d_str}",
+             "Blinkit Grocery", 396.00, "Groceries")
         ]
         sample = random.choice(sample_receipts)
         ocr_text = sample[0]

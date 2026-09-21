@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, jsonify
-from app.utils.helpers import login_required, safe_float, get_current_month_year, error_response, success_response
+from app.utils.helpers import login_required, safe_float, get_current_month_year
 from app.services import supabase_service as db
 from app.services import analysis_service, budget_service
 from app.services.ai_service import EXPENSE_CATEGORIES
@@ -33,7 +33,8 @@ def budget():
     goals = db.get_goals(user_id)
     month_name = calendar.month_name[month]
 
-    return render_template('budget.html',
+    return render_template(
+        'budget.html',
         budget=current_budget,
         monthly_income=monthly_income,
         analysis=analysis,

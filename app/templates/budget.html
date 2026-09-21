@@ -69,7 +69,8 @@
         </div>
 
         <button type="submit" class="btn btn-primary btn-block btn-lg mt-24">
-          💾 Save & Apply Monthly Budget
+          <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Save & Apply Monthly Budget
         </button>
       </form>
     </div>
@@ -78,7 +79,7 @@
     <div class="card">
       <div class="card-header">
         <div>
-          <h5 class="card-title">🤖 Adaptive AI Budget Engine</h5>
+          <h5 class="card-title">Adaptive AI Budget Engine</h5>
           <div class="card-subtitle">Generate dynamic category allocations based on income & past spending</div>
         </div>
         <button type="button" onclick="requestAiRecommendation()" class="btn btn-outline btn-sm">Get Suggestion</button>
@@ -86,7 +87,9 @@
 
       <div id="aiRecommendationOutput">
         <div class="empty-state" style="padding: 24px 16px;">
-          <div class="icon">💡</div>
+          <div class="icon">
+            <svg viewBox="0 0 24 24"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+          </div>
           <h5>Need Help Sizing Your Budget?</h5>
           <p>Click "Get Suggestion" to calculate optimal spending limits tailored to Indian college student lifestyle patterns.</p>
         </div>
@@ -117,7 +120,7 @@
       <div class="mb-16">
         <div class="d-flex justify-between" style="font-size: 0.8125rem; margin-bottom: 6px;">
           <span>Spent: <strong>₹{{ "{:,.0f}".format(spent_amt) }}</strong></span>
-          <span style="font-weight: 600;">{{ "{:.0f}".format((spent_amt / target_amt * 100) if target_amt else 0) }}%</span>
+          <span style="font-weight: 700;">{{ "{:.0f}".format((spent_amt / target_amt * 100) if target_amt else 0) }}%</span>
         </div>
         <div class="progress-bar-bg" style="height: 10px;">
           <div class="progress-bar-fill {{ 'danger' if spent_amt > target_amt else 'warning' if (spent_amt / target_amt) > 0.75 else 'success' }}"
@@ -127,7 +130,7 @@
 
       <!-- Category Caps -->
       {% if budget and budget.budget_categories %}
-      <div style="font-weight: 600; font-size: 0.875rem; margin-bottom: 12px; border-top: 1px solid var(--border); padding-top: 16px;">
+      <div style="font-weight: 700; font-size: 0.875rem; margin-bottom: 12px; border-top: 1px solid var(--border); padding-top: 16px;">
         Category Utilization
       </div>
       <div class="d-flex flex-col gap-12">
@@ -136,8 +139,8 @@
         {% set c_pct = [(c_spent / bc.limit_amount * 100) if bc.limit_amount else 0, 100] | min %}
         <div>
           <div class="d-flex justify-between" style="font-size: 0.8125rem; margin-bottom: 4px;">
-            <span>{{ bc.category }}</span>
-            <span style="color: {{ 'var(--danger)' if c_spent > bc.limit_amount else 'var(--text-secondary)' }}; font-weight: 500;">
+            <span style="font-weight: 500;">{{ bc.category }}</span>
+            <span style="color: {{ 'var(--danger)' if c_spent > bc.limit_amount else 'var(--text-secondary)' }}; font-weight: 600;">
               ₹{{ "{:,.0f}".format(c_spent) }} / ₹{{ "{:,.0f}".format(bc.limit_amount) }}
             </span>
           </div>
@@ -169,7 +172,7 @@
             {% for cat, amt in analysis.category_spending.items() | sort(attribute=1, reverse=True) %}
             <tr>
               <td>{{ cat }}</td>
-              <td style="text-align: right; font-weight: 600;">₹{{ "{:,.0f}".format(amt) }}</td>
+              <td style="text-align: right; font-weight: 700;">₹{{ "{:,.0f}".format(amt) }}</td>
             </tr>
             {% endfor %}
           </tbody>
@@ -182,8 +185,16 @@
 {% endblock %}
 
 {% block scripts %}
+<script id="budget-config-data" type="application/json">
+  {
+    "monthlyIncome": {{ profile.monthly_income | float }},
+    "categories": {{ categories | tojson }}
+  }
+</script>
 <script>
-  const monthlyIncome = {{ profile.monthly_income | float }};
+  const budgetConfigEl = document.getElementById('budget-config-data');
+  const budgetConfig = budgetConfigEl ? JSON.parse(budgetConfigEl.textContent.trim()) : { monthlyIncome: 15000, categories: [] };
+  const monthlyIncome = budgetConfig.monthlyIncome;
 
   function calculateAvailableBudget() {
     const savings = parseFloat(document.getElementById('savings_target').value) || 0;
@@ -194,7 +205,7 @@
 
   function addCategoryRow() {
     const container = document.getElementById('categoryRowsContainer');
-    const categories = {{ categories | tojson }};
+    const categories = budgetConfig.categories;
     const row = document.createElement('div');
     row.className = 'd-flex gap-8 align-center';
     row.innerHTML = `
@@ -233,11 +244,11 @@
         });
       }
 
-      html += '<div style="font-weight:600; font-size:0.8125rem; margin:12px 0 8px;">Suggested Category Allocations:</div>';
+      html += '<div style="font-weight:700; font-size:0.8125rem; margin:12px 0 8px;">Suggested Category Allocations:</div>';
       for (const [cat, limit] of Object.entries(data.category_limits)) {
         html += `
           <div class="d-flex justify-between" style="padding:6px 0; font-size:0.8125rem; border-bottom:1px solid var(--border);">
-            <span>${cat}</span><span style="font-weight:600;">₹${limit.toLocaleString()}</span>
+            <span>${cat}</span><span style="font-weight:700;">₹${limit.toLocaleString()}</span>
           </div>`;
       }
 

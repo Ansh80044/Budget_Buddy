@@ -94,7 +94,6 @@ def _seed_demo_data(cursor, conn):
     now = datetime.datetime.now()
     year = now.year
     month = now.month
-    today_str = now.strftime('%Y-%m-%d')
     user_id = 'demo-user-1'
 
     cursor.execute("""
@@ -348,9 +347,11 @@ def local_create_budget(data: dict):
     ))
     conn.commit()
     conn.close()
-    class DummyResp:
+
+    class LocalBudgetResponse:
         data = [{'id': b_id}]
-    return DummyResp()
+
+    return LocalBudgetResponse()
 
 
 def local_update_budget(budget_id: str, user_id: str, data: dict):

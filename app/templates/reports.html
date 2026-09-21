@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}Reports & Analytics{% endblock %}
-{% block page_title %}Reports & Analytics{% endblock %}
+{% block page_title %}Reports & Trends{% endblock %}
 {% block page_subtitle %}{{ month_name }} {{ year }} · Historical spending patterns, category distributions and trend analysis{% endblock %}
 
 {% block topbar_actions %}
@@ -15,11 +15,17 @@
     <div class="label">Monthly Allowance</div>
     <div class="value">₹{{ "{:,.0f}".format(monthly_income) }}</div>
     <div class="meta">Baseline income</div>
+    <div class="icon-chip">
+      <svg viewBox="0 0 24 24"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg>
+    </div>
   </div>
   <div class="stat-card">
     <div class="label">Total Spent</div>
     <div class="value danger">₹{{ "{:,.0f}".format(analysis.total_expenses) }}</div>
     <div class="meta">{{ analysis.transaction_count }} recorded expenses</div>
+    <div class="icon-chip">
+      <svg viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+    </div>
   </div>
   <div class="stat-card">
     <div class="label">Current Savings Surplus</div>
@@ -27,21 +33,33 @@
       ₹{{ "{:,.0f}".format((monthly_income - analysis.total_expenses) | abs) }}
     </div>
     <div class="meta">{{ 'Surplus' if monthly_income >= analysis.total_expenses else 'Deficit' }}</div>
+    <div class="icon-chip">
+      <svg viewBox="0 0 24 24"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg>
+    </div>
   </div>
   <div class="stat-card">
     <div class="label">Avg Daily Expenditure</div>
     <div class="value">₹{{ "{:,.0f}".format(analysis.avg_daily_spending) }}</div>
     <div class="meta">Per active day</div>
+    <div class="icon-chip">
+      <svg viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+    </div>
   </div>
   <div class="stat-card">
     <div class="label">Projected Month-End</div>
     <div class="value warning">₹{{ "{:,.0f}".format(prediction.predicted_spending) }}</div>
     <div class="meta">{{ prediction.days_remaining }} days remaining</div>
+    <div class="icon-chip">
+      <svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+    </div>
   </div>
   <div class="stat-card">
     <div class="label">Savings Goals Total</div>
     <div class="value success">₹{{ "{:,.0f}".format(total_saved) }}</div>
     <div class="meta">of ₹{{ "{:,.0f}".format(total_goal_target) }} target</div>
+    <div class="icon-chip">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+    </div>
   </div>
 </div>
 
@@ -61,7 +79,9 @@
     </div>
     {% else %}
     <div class="empty-state" style="padding: 48px 16px;">
-      <div class="icon">📊</div>
+      <div class="icon">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 10 10h-10z"/></svg>
+      </div>
       <h5>No Category Data</h5>
       <p>Record expenses to view category distribution.</p>
     </div>
@@ -135,12 +155,12 @@
           {% for exp in analysis.largest_expenses %}
           <tr>
             <td>
-              <div style="font-weight: 500;">{{ exp.description }}</div>
+              <div style="font-weight: 600;">{{ exp.description }}</div>
             </td>
             <td>
               <span class="badge badge-neutral">{{ exp.category or '—' }}</span>
             </td>
-            <td style="text-align: right; font-weight: 600; color: var(--danger);">
+            <td style="text-align: right; font-weight: 700; color: var(--danger);">
               ₹{{ "{:,.0f}".format(exp.amount) }}
             </td>
           </tr>
@@ -169,15 +189,15 @@
     <div class="d-flex flex-col gap-12">
       {% for goal in goals %}
       {% set pct = [(goal.saved_amount / goal.target_amount * 100) if goal.target_amount else 0, 100] | min %}
-      <div style="border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 16px; background-color: var(--surface);">
+      <div style="border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px; background-color: var(--surface);">
         <div class="d-flex justify-between align-center mb-8">
-          <span style="font-weight: 600; font-size: 0.8125rem;">{{ goal.name }}</span>
+          <span style="font-weight: 700; font-size: 0.8125rem;">{{ goal.name }}</span>
           <span class="badge {{ 'badge-success' if pct >= 100 else 'badge-primary' }}">{{ "{:.0f}".format(pct) }}%</span>
         </div>
         <div class="progress-bar-bg" style="height: 6px; margin-bottom: 6px;">
           <div class="progress-bar-fill {{ 'success' if pct >= 100 else '' }}" style="width: {{ pct }}%;"></div>
         </div>
-        <div class="d-flex justify-between" style="font-size: 0.75rem; color: var(--text-secondary);">
+        <div class="d-flex justify-between" style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 500;">
           <span>₹{{ "{:,.0f}".format(goal.saved_amount) }}</span>
           <span>Target: ₹{{ "{:,.0f}".format(goal.target_amount) }}</span>
         </div>
@@ -196,31 +216,66 @@
 
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script id="reports-analytics-data" type="application/json">
+  {
+    "categorySpending": {{ analysis.category_spending | tojson }},
+    "monthlyTrend": {{ all_analysis.monthly_trend | tojson }},
+    "monthlyIncome": {{ monthly_income }},
+    "totalExpenses": {{ analysis.total_expenses }},
+    "predictedSpending": {{ prediction.predicted_spending }},
+    "budgetAmount": {{ budget_amount }},
+    "savingsTarget": {{ savings_target }}
+  }
+</script>
 <script>
-  const palette = ['#0F172A','#16A34A','#D97706','#DC2626','#475569','#0284C7','#9333EA','#EA580C','#65A30D','#0D9488','#E11D48','#64748B'];
+  const reportsDataEl = document.getElementById('reports-analytics-data');
+  const repData = reportsDataEl ? JSON.parse(reportsDataEl.textContent.trim()) : {};
+  const categoryColorMap = {
+    'Education': '#38BDF8', // Light Blue
+    'Food & Dining': '#EA580C',
+    'Transportation': '#16A34A',
+    'Groceries': '#0D9488',
+    'Shopping': '#EC4899',
+    'Entertainment': '#8B5CF6',
+    'Utilities': '#D97706',
+    'Health & Medical': '#DC2626',
+    'Subscriptions': '#6366F1',
+    'Rent & Housing': '#475569',
+    'Personal Care': '#06B6D4',
+    'Travel': '#2563EB',
+    'Sports & Fitness': '#65A30D',
+    'Gifts & Donations': '#A855F7',
+    'Other': '#64748B'
+  };
+  const fallbackPalette = ['#38BDF8','#16A34A','#D97706','#DC2626','#475569','#0284C7','#9333EA','#EA580C','#65A30D','#0D9488'];
+  const fontConfig = { family: 'Plus Jakarta Sans', size: 11, weight: '500' };
 
   // Category Donut
-  const catData = {{ analysis.category_spending | tojson }};
+  const catData = repData.categorySpending || {};
   if (catData && Object.keys(catData).length > 0) {
+    const catLabels = Object.keys(catData);
+    const catValues = Object.values(catData);
+    const catColors = catLabels.map((c, i) => categoryColorMap[c] || fallbackPalette[i % fallbackPalette.length]);
+
     new Chart(document.getElementById('categoryDonutChart'), {
       type: 'doughnut',
       data: {
-        labels: Object.keys(catData),
+        labels: catLabels,
         datasets: [{
-          data: Object.values(catData),
-          backgroundColor: palette.slice(0, Object.keys(catData).length),
-          borderWidth: 1,
-          borderColor: '#E5E7EB'
+          data: catValues,
+          backgroundColor: catColors,
+          borderWidth: 2,
+          borderColor: '#FFFFFF'
         }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        cutout: '68%',
+        cutout: '70%',
         plugins: {
           legend: {
             position: 'right',
-            labels: { font: { family: 'Poppins', size: 10 }, boxWidth: 10, padding: 8 }
+            labels: { font: fontConfig, boxWidth: 10, padding: 8 }
           },
           tooltip: {
             callbacks: { label: ctx => ` ₹${ctx.parsed.toLocaleString('en-IN')}` }
@@ -236,29 +291,29 @@
     data: {
       labels: ['Monthly Allocation'],
       datasets: [
-        { label: 'Allowance', data: [{{ monthly_income }}], backgroundColor: '#0F172A', borderRadius: 4 },
-        { label: 'Actual Spent', data: [{{ analysis.total_expenses }}], backgroundColor: '#DC2626', borderRadius: 4 },
-        { label: 'Predicted Total', data: [{{ prediction.predicted_spending }}], backgroundColor: '#D97706', borderRadius: 4 }
+        { label: 'Allowance', data: [repData.monthlyIncome || 0], backgroundColor: '#000000', borderRadius: 4 },
+        { label: 'Actual Spent', data: [repData.totalExpenses || 0], backgroundColor: '#DC2626', borderRadius: 4 },
+        { label: 'Predicted Total', data: [repData.predictedSpending || 0], backgroundColor: '#D97706', borderRadius: 4 }
       ]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: { labels: { font: { family: 'Poppins', size: 11 }, boxWidth: 12 } }
+        legend: { labels: { font: fontConfig, boxWidth: 12 } }
       },
       scales: {
         y: {
-          ticks: { font: { family: 'Poppins', size: 10 }, callback: v => '₹' + (v >= 1000 ? (v/1000).toFixed(0) + 'k' : v) },
+          ticks: { font: { family: 'Plus Jakarta Sans', size: 10 }, callback: v => '₹' + (v >= 1000 ? (v/1000).toFixed(0) + 'k' : v) },
           grid: { color: '#F1F5F9' }
         },
-        x: { ticks: { font: { family: 'Poppins' } }, grid: { display: false } }
+        x: { ticks: { font: fontConfig }, grid: { display: false } }
       }
     }
   });
 
   // Monthly Trend Line
-  const trendData = {{ all_analysis.monthly_trend | tojson }};
+  const trendData = repData.monthlyTrend || {};
   const trendKeys = Object.keys(trendData).slice(-6);
   const trendVals = trendKeys.map(k => trendData[k]);
 
@@ -268,11 +323,11 @@
       labels: trendKeys.length ? trendKeys : ['Current Month'],
       datasets: [{
         label: 'Monthly Expenditure',
-        data: trendVals.length ? trendVals : [{{ analysis.total_expenses }}],
+        data: trendVals.length ? trendVals : [repData.totalExpenses || 0],
         borderColor: '#0F172A',
-        backgroundColor: 'rgba(15, 23, 42, 0.05)',
+        backgroundColor: 'rgba(15, 23, 42, 0.04)',
         fill: true,
-        tension: 0.3,
+        tension: 0.35,
         borderWidth: 2,
         pointRadius: 4,
         pointBackgroundColor: '#0F172A'
@@ -284,17 +339,17 @@
       plugins: { legend: { display: false } },
       scales: {
         y: {
-          ticks: { font: { family: 'Poppins', size: 10 }, callback: v => '₹' + (v >= 1000 ? (v/1000).toFixed(0) + 'k' : v) },
+          ticks: { font: { family: 'Plus Jakarta Sans', size: 10 }, callback: v => '₹' + (v >= 1000 ? (v/1000).toFixed(0) + 'k' : v) },
           grid: { color: '#F1F5F9' }
         },
-        x: { ticks: { font: { family: 'Poppins', size: 10 } }, grid: { display: false } }
+        x: { ticks: { font: { family: 'Plus Jakarta Sans', size: 10 } }, grid: { display: false } }
       }
     }
   });
 
   // Budget Allocation Bar
-  const budgetCap = {{ budget_amount }};
-  const spentTotal = {{ analysis.total_expenses }};
+  const budgetCap = repData.budgetAmount || 0;
+  const spentTotal = repData.totalExpenses || 0;
   const remainCap = Math.max(budgetCap - spentTotal, 0);
 
   new Chart(document.getElementById('budgetAllocationChart'), {
@@ -302,8 +357,8 @@
     data: {
       labels: ['Spent', 'Remaining Spend Cap', 'Savings Target'],
       datasets: [{
-        data: [spentTotal, remainCap, {{ savings_target }}],
-        backgroundColor: ['#DC2626', '#16A34A', '#0F172A'],
+        data: [spentTotal, remainCap, repData.savingsTarget || 0],
+        backgroundColor: ['#DC2626', '#16A34A', '#000000'],
         borderRadius: 4
       }]
     },
@@ -313,10 +368,10 @@
       plugins: { legend: { display: false } },
       scales: {
         y: {
-          ticks: { font: { family: 'Poppins', size: 10 }, callback: v => '₹' + (v >= 1000 ? (v/1000).toFixed(0) + 'k' : v) },
+          ticks: { font: { family: 'Plus Jakarta Sans', size: 10 }, callback: v => '₹' + (v >= 1000 ? (v/1000).toFixed(0) + 'k' : v) },
           grid: { color: '#F1F5F9' }
         },
-        x: { ticks: { font: { family: 'Poppins', size: 10 } }, grid: { display: false } }
+        x: { ticks: { font: { family: 'Plus Jakarta Sans', size: 10 } }, grid: { display: false } }
       }
     }
   });

@@ -11,21 +11,33 @@
     <div class="label">Monthly Income</div>
     <div class="value">₹{{ "{:,.0f}".format(monthly_income) }}</div>
     <div class="meta">Allowance baseline</div>
+    <div class="icon-chip">
+      <svg viewBox="0 0 24 24"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg>
+    </div>
   </div>
   <div class="stat-card">
     <div class="label">Actual Spent</div>
     <div class="value">₹{{ "{:,.0f}".format(total_expenses) }}</div>
     <div class="meta">Recorded transactions</div>
+    <div class="icon-chip">
+      <svg viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+    </div>
   </div>
   <div class="stat-card">
     <div class="label">Current Balance</div>
     <div class="value {{ 'success' if current_balance >= 0 else 'danger' }}">₹{{ "{:,.0f}".format(current_balance | abs) }}</div>
     <div class="meta">{{ 'Surplus' if current_balance >= 0 else 'Deficit' }}</div>
+    <div class="icon-chip">
+      <svg viewBox="0 0 24 24"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg>
+    </div>
   </div>
   <div class="stat-card">
     <div class="label">Budget Target</div>
     <div class="value">₹{{ "{:,.0f}".format(budget_amount) }}</div>
     <div class="meta">Monthly spend cap</div>
+    <div class="icon-chip">
+      <svg viewBox="0 0 24 24"><path d="M12 20v-6M6 20V10M18 20V4"/></svg>
+    </div>
   </div>
 </div>
 
@@ -42,16 +54,20 @@
 
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px;">
         <button type="button" id="btn_purchase" class="btn btn-outline" onclick="setScenario('purchase')" style="justify-content: flex-start; padding: 12px 14px;">
-          🛒 Planned Purchase
+          <svg viewBox="0 0 24 24"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+          Planned Purchase
         </button>
         <button type="button" id="btn_reduce_category" class="btn btn-outline" onclick="setScenario('reduce_category')" style="justify-content: flex-start; padding: 12px 14px;">
-          ✂️ Reduce Spending
+          <svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" x2="8.12" y1="4" y2="15.88"/><line x1="14.47" x2="20" y1="14.48" y2="20"/><line x1="8.12" x2="12" y1="8.12" y2="12"/></svg>
+          Reduce Spending
         </button>
         <button type="button" id="btn_increase_income" class="btn btn-outline" onclick="setScenario('increase_income')" style="justify-content: flex-start; padding: 12px 14px;">
-          💼 Additional Income
+          <svg viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+          Additional Income
         </button>
         <button type="button" id="btn_savings_boost" class="btn btn-outline" onclick="setScenario('savings_boost')" style="justify-content: flex-start; padding: 12px 14px;">
-          🎯 Boost Savings Goal
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+          Boost Savings Goal
         </button>
       </div>
 
@@ -107,7 +123,7 @@
       </div>
 
       <button type="button" id="runSimButton" class="btn btn-primary btn-block btn-lg mt-8" onclick="executeSimulation()" style="display: none;">
-        ▶ Calculate Simulation Impact
+        Calculate Simulation Impact
       </button>
     </div>
 
@@ -132,7 +148,9 @@
     </div>
 
     <div id="emptySimState" class="empty-state" style="padding: 64px 16px;">
-      <div class="icon">🔮</div>
+      <div class="icon">
+        <svg viewBox="0 0 24 24"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+      </div>
       <h5>Ready for Simulation</h5>
       <p>Configure a scenario on the left to calculate projected month-end balance, budget utilization, and savings gap.</p>
     </div>
@@ -145,13 +163,13 @@
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
         <!-- Baseline -->
         <div style="border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; background-color: var(--bg);">
-          <div style="font-weight: 600; font-size: 0.8125rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 12px;">Baseline Metrics</div>
+          <div style="font-weight: 700; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: 12px;">Baseline Metrics</div>
           <div id="beforeMetrics" class="d-flex flex-col gap-8" style="font-size: 0.8125rem;"></div>
         </div>
 
         <!-- Simulated -->
         <div id="afterPanelBox" style="border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; background-color: var(--surface);">
-          <div style="font-weight: 600; font-size: 0.8125rem; text-transform: uppercase; color: var(--primary); margin-bottom: 12px;">Simulated Outcome</div>
+          <div style="font-weight: 700; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--primary); margin-bottom: 12px;">Simulated Outcome</div>
           <div id="afterMetrics" class="d-flex flex-col gap-8" style="font-size: 0.8125rem;"></div>
         </div>
       </div>
@@ -221,12 +239,12 @@
     // Alerts
     const alerts = [];
     if (data.over_budget) {
-      alerts.push('<div class="alert alert-danger" style="margin-bottom:8px;">🚨 <strong>Budget Alert:</strong> This scenario puts you over your defined monthly spending limit.</div>');
+      alerts.push('<div class="alert alert-danger" style="margin-bottom:8px;"><strong>Budget Alert:</strong> This scenario puts you over your defined monthly spending limit.</div>');
     }
     if (data.meets_savings) {
-      alerts.push('<div class="alert alert-success" style="margin-bottom:8px;">✅ <strong>Savings Target:</strong> You successfully maintain your monthly savings target under this plan.</div>');
+      alerts.push('<div class="alert alert-success" style="margin-bottom:8px;"><strong>Savings Target:</strong> You successfully maintain your monthly savings target under this plan.</div>');
     } else {
-      alerts.push('<div class="alert alert-warning" style="margin-bottom:8px;">⚠️ <strong>Savings Gap:</strong> Under this scenario, you may fall short of your savings target.</div>');
+      alerts.push('<div class="alert alert-warning" style="margin-bottom:8px;"><strong>Savings Gap:</strong> Under this scenario, you may fall short of your savings target.</div>');
     }
     document.getElementById('simAlertsBox').innerHTML = alerts.join('');
 
@@ -262,7 +280,7 @@
           {
             label: 'Baseline',
             data: [before.income, before.expenses, before.balance],
-            backgroundColor: '#0F172A',
+            backgroundColor: '#000000',
             borderRadius: 4
           },
           {
@@ -279,7 +297,7 @@
         plugins: {
           legend: {
             position: 'top',
-            labels: { font: { family: 'Poppins', size: 11 }, boxWidth: 12 }
+            labels: { font: { family: 'Plus Jakarta Sans', size: 11, weight: '500' }, boxWidth: 12 }
           },
           tooltip: {
             callbacks: {
@@ -290,13 +308,13 @@
         scales: {
           y: {
             ticks: {
-              font: { family: 'Poppins', size: 10 },
+              font: { family: 'Plus Jakarta Sans', size: 10 },
               callback: (v) => '₹' + (v >= 1000 ? (v/1000).toFixed(0) + 'k' : v)
             },
             grid: { color: '#F1F5F9' }
           },
           x: {
-            ticks: { font: { family: 'Poppins', size: 11 } },
+            ticks: { font: { family: 'Plus Jakarta Sans', size: 11 } },
             grid: { display: false }
           }
         }
