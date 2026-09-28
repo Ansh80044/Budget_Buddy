@@ -22,24 +22,37 @@ EXPENSE_CATEGORIES = [
 
 
 def is_openai_configured() -> bool:
-    key = os.environ.get('OPENAI_API_KEY', '').strip()
-    return bool(key and not key.startswith('your_openai') and not key.startswith('sk-fake') and len(key) > 20)
+    groq_key = os.environ.get('GROQ_API_KEY', '').strip()
+    if groq_key and not groq_key.startswith('your_') and len(groq_key) > 10:
+        return True
+    openai_key = os.environ.get('OPENAI_API_KEY', '').strip()
+    return bool(openai_key and not openai_key.startswith('your_') and not openai_key.startswith('sk-fake') and len(openai_key) > 20)
 
 
 def get_client():
-    if not is_openai_configured():
-        return None
-    try:
-        from openai import OpenAI
-        return OpenAI(api_key=os.environ.get('OPENAI_API_KEY'))
-    except Exception as e:
-        print(f"OpenAI init notice: {e}")
-        return None
+    """Return tuple of (client, model_name). Prefers Groq (100% free) then OpenAI."""
+    groq_key = os.environ.get('GROQ_API_KEY', '').strip()
+    if groq_key and not groq_key.startswith('your_') and len(groq_key) > 10:
+        try:
+            from openai import OpenAI
+            return OpenAI(api_key=groq_key, base_url="https://api.groq.com/openai/v1"), "openai/gpt-oss-120b"
+        except Exception as e:
+            print(f"Groq init notice: {e}")
+
+    openai_key = os.environ.get('OPENAI_API_KEY', '').strip()
+    if openai_key and not openai_key.startswith('your_') and not openai_key.startswith('sk-fake') and len(openai_key) > 20:
+        try:
+            from openai import OpenAI
+            return OpenAI(api_key=openai_key), "gpt-4o-mini"
+        except Exception as e:
+            print(f"OpenAI init notice: {e}")
+
+    return None, None
 
 
 def categorize_expense(description: str, amount: float) -> str:
-    """Categorize expense using OpenAI if configured, otherwise rule-based categorizer."""
-    client = get_client()
+    """Categorize expense using Groq/OpenAI if configured, otherwise rule-based categorizer."""
+    client, model = get_client()
     if client:
         try:
             prompt = f"""You are an expense categorization system for college students in India.
@@ -52,7 +65,7 @@ Amount: ₹{amount}
 Respond with ONLY the category name, nothing else."""
 
             resp = client.chat.completions.create(
-                model="gpt-4o-mini",
+                model=model,
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=20,
                 temperature=0.1
@@ -64,7 +77,7 @@ Respond with ONLY the category name, nothing else."""
                 if cat.lower() in category.lower() or category.lower() in cat.lower():
                     return cat
         except Exception as e:
-            print(f"OpenAI categorize error, using rule-based: {e}")
+            print(f"AI categorize error, using rule-based: {e}")
 
     return _rule_based_categorize(description)
 
@@ -132,7 +145,7 @@ def _rule_based_categorize(description: str) -> str:
 
 def extract_receipt_data(extracted_text: str) -> dict:
     """Extract information from OCR receipt text."""
-    client = get_client()
+    client, model = get_client()
     if client:
         try:
             prompt = f"""Extract the following information from this receipt OCR text and return valid JSON only:
@@ -148,7 +161,7 @@ Respond with ONLY a valid JSON object like:
 {{"merchant": "...", "amount": 0.0, "date": "YYYY-MM-DD", "description": "..."}}"""
 
             resp = client.chat.completions.create(
-                model="gpt-4o-mini",
+                model=model,
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=150,
                 temperature=0.1
@@ -194,7 +207,7 @@ def _heuristic_receipt_parser(text: str) -> dict:
 
 def get_financial_coach_response(question: str, financial_context: dict) -> str:
     """Get AI Financial Coach response with full financial context."""
-    client = get_client()
+    client, model = get_client()
     if client:
         try:
             context_str = f"""
@@ -223,7 +236,7 @@ Use ₹ for currency. Keep responses concise, clear, and actionable.
 Disclaimer: Educational budgeting assistance only, not professional financial advice."""
 
             resp = client.chat.completions.create(
-                model="gpt-4o-mini",
+                model=model,
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": f"Financial Context:\n{context_str}\n\nUser Question: {question}"}
@@ -233,7 +246,7 @@ Disclaimer: Educational budgeting assistance only, not professional financial ad
             )
             return resp.choices[0].message.content.strip()
         except Exception as e:
-            print(f"OpenAI Coach error, using local financial reasoning: {e}")
+            print(f"AI Coach error, using local financial reasoning: {e}")
 
     # High-quality local rule-based AI reasoning
     return _local_financial_coach_answer(question, financial_context)

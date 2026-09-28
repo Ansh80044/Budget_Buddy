@@ -116,21 +116,33 @@ else:
             results["supabase"]["status"] = "FAIL"
             results["supabase"]["details"] = str(e)
 
-# 5. Test OpenAI
-if is_openai_placeholder:
-    results["openai"]["status"] = "NOT_CONFIGURED"
-    results["openai"]["details"] = "OPENAI_API_KEY is not set or still set to placeholder."
-else:
+# 5. Test AI (Groq or OpenAI)
+groq_key = os.environ.get('GROQ_API_KEY', '').strip()
+openai_key = os.environ.get('OPENAI_API_KEY', '').strip()
+
+if groq_key and not groq_key.startswith('your_'):
+    try:
+        from openai import OpenAI
+        groq_client = OpenAI(api_key=groq_key, base_url="https://api.groq.com/openai/v1")
+        models = groq_client.models.list()
+        results["openai"]["status"] = "PASS"
+        results["openai"]["details"] = f"Groq Free AI authenticated successfully ({len(models.data)} models available)."
+    except Exception as e:
+        results["openai"]["status"] = "FAIL"
+        results["openai"]["details"] = f"Groq error: {str(e)}"
+elif openai_key and not is_openai_placeholder:
     try:
         from openai import OpenAI
         oai_client = OpenAI(api_key=openai_key)
-        # Quick model check
         models = oai_client.models.list()
         results["openai"]["status"] = "PASS"
         results["openai"]["details"] = "OpenAI API key authenticated successfully."
     except Exception as e:
         results["openai"]["status"] = "FAIL"
         results["openai"]["details"] = str(e)
+else:
+    results["openai"]["status"] = "NOT_CONFIGURED"
+    results["openai"]["details"] = "Neither GROQ_API_KEY nor OPENAI_API_KEY is configured."
 
 # 6. Test Tesseract
 try:
