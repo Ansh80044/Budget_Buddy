@@ -86,24 +86,18 @@
       <form method="POST" action="{{ url_for('auth.login') }}" id="loginForm">
         <div class="form-group">
           <label for="email" class="form-label">Email Address</label>
-          <input type="email" id="email" name="email" class="form-control" placeholder="student@college.edu" required autocomplete="email" value="student@college.edu"/>
+          <input type="email" id="email" name="email" class="form-control" placeholder="you@college.edu" required autocomplete="email"/>
         </div>
         <div class="form-group">
           <div class="d-flex justify-between align-center" style="margin-bottom: 6px;">
             <label for="password" class="form-label" style="margin-bottom:0;">Password</label>
           </div>
-          <input type="password" id="password" name="password" class="form-control" placeholder="••••••••" required autocomplete="current-password" value="demo123"/>
+          <input type="password" id="password" name="password" class="form-control" placeholder="••••••••" required autocomplete="current-password"/>
         </div>
         <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top: 8px;">
           Sign In
         </button>
       </form>
-
-      <div class="divider">or quick access</div>
-
-      <button type="button" onclick="fillDemoAndSubmit()" class="btn btn-outline btn-block">
-        1-Click Demo Login
-      </button>
 
       <div style="text-align: center; margin-top: 24px; font-size: 0.875rem;">
         <span style="color: var(--text-secondary);">New to Budget Buddy?</span>
@@ -115,13 +109,5 @@
       </div>
     </div>
   </div>
-
-  <script>
-    function fillDemoAndSubmit() {
-      document.getElementById('email').value = 'student@college.edu';
-      document.getElementById('password').value = 'demo123';
-      document.getElementById('loginForm').submit();
-    }
-  </script>
 </body>
 </html>

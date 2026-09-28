@@ -80,90 +80,7 @@ def init_local_db():
     """)
     conn.commit()
 
-    # Check if default demo user exists
-    cursor.execute("SELECT id FROM profiles WHERE id = 'demo-user-1'")
-    demo_user = cursor.fetchone()
-    if not demo_user:
-        _seed_demo_data(cursor, conn)
-
     conn.close()
-
-
-def _seed_demo_data(cursor, conn):
-    """Seed high quality realistic college student financial data."""
-    now = datetime.datetime.now()
-    year = now.year
-    month = now.month
-    user_id = 'demo-user-1'
-
-    cursor.execute("""
-    INSERT OR REPLACE INTO profiles (id, email, password, name, monthly_income, created_at)
-    VALUES (?, ?, ?, ?, ?, ?)
-    """, (user_id, 'student@college.edu', 'demo123', 'Aarav Sharma', 15000.0, now.isoformat()))
-
-    # Budget for current month
-    budget_id = str(uuid.uuid4())
-    cursor.execute("""
-    INSERT OR REPLACE INTO budgets (id, user_id, month, year, amount, savings_target, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-    """, (budget_id, user_id, month, year, 12000.0, 3000.0, now.isoformat()))
-
-    # Budget categories
-    cat_limits = [
-        ('Food & Dining', 4500.0),
-        ('Transportation', 1500.0),
-        ('Education', 2000.0),
-        ('Entertainment', 1500.0),
-        ('Shopping', 1500.0),
-        ('Utilities', 1000.0)
-    ]
-    for cat, lim in cat_limits:
-        cursor.execute("""
-        INSERT OR REPLACE INTO budget_categories (id, budget_id, category, limit_amount)
-        VALUES (?, ?, ?, ?)
-        """, (str(uuid.uuid4()), budget_id, cat, lim))
-
-    # Savings goals
-    goals = [
-        ('New Laptop for Coding', 55000.0, 24000.0, f'{year}-12-31'),
-        ('Emergency Fund', 10000.0, 6500.0, f'{year}-10-15'),
-        ('College Fest Trip', 8000.0, 4800.0, f'{year}-11-20'),
-        ('Sony Noise Cancelling Headphones', 12000.0, 3500.0, f'{year}-09-30')
-    ]
-    for name, target, saved, deadline in goals:
-        cursor.execute("""
-        INSERT OR REPLACE INTO savings_goals (id, user_id, name, target_amount, saved_amount, deadline, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (str(uuid.uuid4()), user_id, name, target, saved, deadline, now.isoformat()))
-
-    # Sample transactions (Income & Expenses for this month and previous month)
-    sample_txs = [
-        # Income
-        ('income', 15000.0, 'Monthly Allowance from Parents', None, f'{year}-{month:02d}-01', 'manual', 'Allowance'),
-        ('income', 3500.0, 'Freelance Web Design Project', None, f'{year}-{month:02d}-10', 'manual', 'Freelance'),
-
-        # Expenses this month
-        ('expense', 450.0, "Domino's Pizza with hostel friends", 'Food & Dining', f'{year}-{month:02d}-03', 'manual', None),
-        ('expense', 240.0, 'Uber ride to college campus', 'Transportation', f'{year}-{month:02d}-04', 'manual', None),
-        ('expense', 1199.0, 'Computer Science Reference Books & Notebooks', 'Education', f'{year}-{month:02d}-06', 'manual', None),
-        ('expense', 199.0, 'Netflix Monthly Subscription', 'Entertainment', f'{year}-{month:02d}-07', 'manual', None),
-        ('expense', 320.0, 'College Canteen Lunch & Chai', 'Food & Dining', f'{year}-{month:02d}-09', 'manual', None),
-        ('expense', 850.0, 'Amazon - Mechanical Keyboard & Mouse Pad', 'Shopping', f'{year}-{month:02d}-12', 'manual', None),
-        ('expense', 299.0, 'Airtel Broadband & Mobile Recharge', 'Utilities', f'{year}-{month:02d}-14', 'manual', None),
-        ('expense', 520.0, 'Zomato Biryani Order', 'Food & Dining', f'{year}-{month:02d}-16', 'manual', None),
-        ('expense', 180.0, 'Auto Rickshaw to Metro Station', 'Transportation', f'{year}-{month:02d}-18', 'manual', None),
-        ('expense', 450.0, 'Movie Tickets at PVR Cinemas', 'Entertainment', f'{year}-{month:02d}-20', 'manual', None),
-        ('expense', 350.0, 'Pharmacy - Cold & Cough Medicine', 'Health & Medical', f'{year}-{month:02d}-21', 'manual', None),
-        ('expense', 1400.0, 'Grocery & Daily Essentials Store', 'Groceries', f'{year}-{month:02d}-22', 'receipt', None)
-    ]
-
-    for tx_type, amount, desc, cat, date_str, src, src_label in sample_txs:
-        cursor.execute("""
-        INSERT OR REPLACE INTO transactions (id, user_id, type, amount, description, category, date, source, source_label, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (str(uuid.uuid4()), user_id, tx_type, amount, desc, cat, date_str, src, src_label, now.isoformat()))
-
-    conn.commit()
 
 
 # ──────────────────────────────────────────────
@@ -197,7 +114,7 @@ def local_sign_in(email: str, password: str):
     user = cursor.fetchone()
     conn.close()
 
-    if user and (user['password'] == password or user['id'] == 'demo-user-1'):
+    if user and user['password'] == password:
         return {'user': {'id': user['id'], 'email': user['email']}, 'session': {'access_token': f"local-token-{user['id']}"}}
     raise ValueError("Invalid email or password.")
 
