@@ -76,7 +76,11 @@ def _rule_based_categorize(description: str) -> str:
         "Food & Dining": [
             "zomato", "swiggy", "domino", "pizza", "burger", "mcdonald", "kfc", "subway",
             "cafe", "coffee", "starbucks", "chai", "tea", "canteen", "mess", "lunch",
-            "dinner", "breakfast", "biryani", "dhaba", "restaurant", "food", "snack", "eat", "shawarma"
+            "dinner", "breakfast", "biryani", "dhaba", "restaurant", "food", "snack", "eat",
+            "shawarma", "dosa", "idli", "vada", "sambar", "uttapam", "thali", "paneer", "paratha",
+            "roti", "bhature", "chole", "pav bhaji", "samosa", "kachori", "momos", "maggi",
+            "noodles", "roll", "chaat", "sweet", "mithai", "ice cream", "juice", "shake",
+            "lassi", "bhojanalaya", "sweets", "bakery", "pastry", "cake", "beverage"
         ],
         "Transportation": [
             "uber", "ola", "rapido", "auto", "rickshaw", "bus", "metro", "train", "cab", "taxi",
