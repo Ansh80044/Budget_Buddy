@@ -11,7 +11,7 @@ A web application that helps college students track income/expenses, analyze spe
 | Feature | Description |
 |---|---|
 | 🧾 Receipt Scanner | Upload receipt → OCR → AI parses data → Save expense |
-| 🧠 AI Categorization | Auto-categorizes expenses using OpenAI |
+| 🧠 AI Categorization | Auto-categorizes expenses using GroqAI |
 | 📊 Adaptive Budget Engine | Recommends budgets based on income & spending |
 | 🔮 Spending Prediction | Estimates monthly spending with optional ML |
 | ⚡ Budget Risk Detection | Alerts for rapid spending, overbudget, savings risk |
