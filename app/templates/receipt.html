@@ -79,7 +79,10 @@
         <div class="grid-2">
           <div class="form-group">
             <label class="form-label">Amount (₹)</label>
-            <input type="number" id="res_amount" name="amount" class="form-control" step="0.01" min="0" required/>
+            <input type="number" id="res_amount" name="amount" class="form-control" step="0.01" min="0" max="500000" oninput="checkAmountWarning(this.value)" required/>
+            <div id="amountWarning" style="display: none; color: #ef4444; font-size: 0.75rem; margin-top: 4px; font-weight: 600;">
+              ⚠️ Amount is unusually high (over ₹50,000). Please ensure an Order ID, Barcode, or Product ID was not entered.
+            </div>
           </div>
           <div class="form-group">
             <label class="form-label">Transaction Date</label>
@@ -143,10 +146,19 @@
       });
       const data = await resp.json();
 
+      if (!resp.ok || data.error) {
+        alert(data.error || 'Failed to extract data from image.');
+        document.getElementById('emptyExtractionState').style.display = 'block';
+        document.getElementById('scanButton').style.display = 'block';
+        return;
+      }
+
       document.getElementById('res_desc').value = data.description || data.merchant || 'Store Purchase';
       document.getElementById('res_amount').value = data.amount || 0;
       document.getElementById('res_date').value = data.date || '{{ today }}';
       document.getElementById('rawOcrText').textContent = data.ocr_text || '(No raw text)';
+
+      checkAmountWarning(data.amount);
 
       const catSelect = document.getElementById('res_category');
       if (data.category && catSelect) {
@@ -162,6 +174,14 @@
       document.getElementById('scanButton').style.display = 'block';
     } finally {
       document.getElementById('loadingIndicator').style.display = 'none';
+    }
+  }
+
+  function checkAmountWarning(val) {
+    const num = parseFloat(val) || 0;
+    const warnEl = document.getElementById('amountWarning');
+    if (warnEl) {
+      warnEl.style.display = (num > 50000) ? 'block' : 'none';
     }
   }
 </script>

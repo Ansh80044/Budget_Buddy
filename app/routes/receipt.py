@@ -31,34 +31,22 @@ def scan_receipt():
     # OCR
     ocr_text = extract_text_from_image(image_bytes)
 
-    # Fallback to smart sample receipt parser if Tesseract OCR is not installed locally
+    # Check if OCR could extract text
     if not ocr_text:
-        d_str = str(date.today())
-        sample_receipts = [
-            (f"STARBUCKS COFFEE INDIA\nCafe Latte (Grande) - ₹340.00\nBlueberry Muffin - ₹210.00\nTOTAL: ₹577.50\nDate: {d_str}",
-             "Starbucks Coffee", 577.50, "Food & Dining"),
-            (f"DECATHLON SPORTS INDIA\nRunning Socks 3-Pack - ₹299.00\nWater Bottle 750ml - ₹399.00\nTOTAL: ₹698.00\nDate: {d_str}",
-             "Decathlon Sports", 698.00, "Sports & Fitness"),
-            (f"CROSSWORD BOOKSTORE\nClean Code (Robert C. Martin) - ₹899.00\nTOTAL: ₹1149.00\nDate: {d_str}",
-             "Crossword Bookstore", 1149.00, "Education"),
-            (f"BLINKIT INSTANT GROCERY\nAmul Milk 1L - ₹66.00\nBread & Butter - ₹110.00\nTOTAL: ₹396.00\nDate: {d_str}",
-             "Blinkit Grocery", 396.00, "Groceries")
-        ]
-        sample = random.choice(sample_receipts)
-        ocr_text = sample[0]
-        merchant = sample[1]
-        amount = sample[2]
-        category = sample[3]
-        description = merchant
-        receipt_date = str(date.today())
-    else:
-        # AI parse
-        extracted = extract_receipt_data(ocr_text)
-        merchant = extracted.get('merchant', '')
-        amount = safe_float(extracted.get('amount', 0))
-        receipt_date = extracted.get('date', str(date.today()))
-        description = extracted.get('description', merchant)
-        category = categorize_expense(f"{merchant} {description}", amount)
+        return jsonify({
+            'error': 'Could not extract readable text from the receipt image. Please ensure the receipt is well-lit and clearly focused, or add the transaction manually.'
+        }), 400
+
+    # AI parse with Groq / fallback
+    extracted = extract_receipt_data(ocr_text)
+    merchant = extracted.get('merchant', '')
+    amount = safe_float(extracted.get('amount', 0))
+    # Safeguard against product IDs or tracking numbers slipping through
+    if amount > 200000:
+        amount = 0.0
+    receipt_date = extracted.get('date', str(date.today()))
+    description = extracted.get('description', merchant)
+    category = categorize_expense(f"{merchant} {description}", amount)
 
     return jsonify({
         'ocr_text': ocr_text,
@@ -81,7 +69,11 @@ def save_receipt_expense():
     category = request.form.get('category', 'Other')
 
     if not description or amount <= 0:
-        flash('Invalid expense data.', 'error')
+        flash('Invalid expense data. Please enter a valid description and amount.', 'error')
+        return redirect(url_for('receipt.receipt'))
+
+    if amount > 500000:
+        flash('Expense amount is unusually high (> ₹5,00,000). Please verify the actual price before saving.', 'error')
         return redirect(url_for('receipt.receipt'))
 
     data = {
