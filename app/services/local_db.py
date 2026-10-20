@@ -87,7 +87,7 @@ def init_local_db():
 # Local DB Helper API
 # ──────────────────────────────────────────────
 
-def local_sign_up(email: str, password: str, name: str):
+def local_sign_up(email: str, password: str, name: str, monthly_income: float = 15000.0):
     init_local_db()
     conn = get_db()
     cursor = conn.cursor()
@@ -96,7 +96,7 @@ def local_sign_up(email: str, password: str, name: str):
     try:
         cursor.execute(
             "INSERT INTO profiles (id, email, password, name, monthly_income, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-            (user_id, email, password, name, 15000.0, now)
+            (user_id, email, password, name, float(monthly_income), now)
         )
         conn.commit()
         return {'user': {'id': user_id, 'email': email}, 'session': {'access_token': f'local-token-{user_id}'}}

@@ -53,7 +53,7 @@ def register():
             return render_template('register.html')
 
         try:
-            resp = db.sign_up(email, password, name)
+            resp = db.sign_up(email, password, name, monthly_income)
             if resp.user:
                 # Update monthly income in profile
                 db.update_profile(resp.user.id, {'monthly_income': monthly_income, 'name': name})

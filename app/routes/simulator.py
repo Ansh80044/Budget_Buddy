@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, session, jsonify
-from app.utils.helpers import login_required, safe_float, get_current_month_year
+from app.utils.helpers import login_required, safe_float, get_current_month_year, days_in_month, days_elapsed_this_month, days_remaining_this_month
 from app.services import supabase_service as db
 from app.services import analysis_service
 import calendar
@@ -67,10 +67,11 @@ def run_simulation():
     total_expenses = analysis['total_expenses']
     category_spending = dict(analysis['category_spending'])
 
-    days_in_month = calendar.monthrange(year, month)[1]
-    import datetime
-    days_elapsed = datetime.date.today().day
-    days_remaining = max(days_in_month - days_elapsed, 0)
+    days_in_m = days_in_month(year, month)
+    days_elapsed = days_elapsed_this_month()
+    days_remaining = max(days_in_m - days_elapsed, 0)
+
+    baseline_predicted = total_expenses + (analysis['avg_daily_spending'] * days_remaining)
 
     # ── Simulation logic ──
     sim_income = monthly_income
@@ -78,21 +79,31 @@ def run_simulation():
     sim_budget = budget_amount
     sim_savings_target = savings_target
     sim_category = dict(category_spending)
+    sim_predicted = baseline_predicted
     notes = []
 
     if scenario == 'purchase':
         purchase_amount = safe_float(data.get('amount', 0))
         purchase_desc = data.get('description', 'Purchase')
         sim_expenses += purchase_amount
+        sim_predicted = baseline_predicted + purchase_amount
         notes.append(f"Added hypothetical purchase '{purchase_desc}' for ₹{purchase_amount:,.0f}")
 
     elif scenario == 'reduce_category':
         category = data.get('category', '')
         reduce_by = safe_float(data.get('reduce_by', 0))
         if category in sim_category:
-            sim_category[category] = max(0, sim_category[category] - reduce_by)
-            sim_expenses = sum(sim_category.values())
-            notes.append(f"Reduced '{category}' spending by ₹{reduce_by:,.0f}")
+            cat_spent = sim_category[category]
+            actual_reduction = min(cat_spent, reduce_by) if cat_spent > 0 else reduce_by
+            sim_category[category] = max(0.0, cat_spent - actual_reduction)
+            sim_expenses = max(0.0, sim_expenses - actual_reduction)
+            sim_predicted = max(0.0, baseline_predicted - actual_reduction)
+            notes.append(f"Reduced '{category}' spending by ₹{actual_reduction:,.0f}")
+        else:
+            actual_reduction = min(sim_expenses, reduce_by) if sim_expenses > 0 else reduce_by
+            sim_expenses = max(0.0, sim_expenses - actual_reduction)
+            sim_predicted = max(0.0, baseline_predicted - actual_reduction)
+            notes.append(f"Reduced discretionary spending by ₹{actual_reduction:,.0f}")
 
     elif scenario == 'increase_income':
         extra_income = safe_float(data.get('amount', 0))
@@ -112,13 +123,12 @@ def run_simulation():
     # Recalculate derived values
     sim_balance = sim_income - sim_expenses
     sim_remaining_budget = sim_budget - sim_expenses
-    sim_budget_usage_pct = (sim_expenses / sim_budget * 100) if sim_budget > 0 else 0
+    sim_budget_usage_pct = (sim_expenses / sim_budget * 100) if sim_budget > 0 else 0.0
     sim_potential_savings = sim_income - sim_expenses
     sim_savings_gap = sim_savings_target - sim_potential_savings
 
-    # Predict after simulation
-    sim_avg_daily = sim_expenses / days_elapsed if days_elapsed > 0 else 0
-    sim_predicted = sim_expenses + (sim_avg_daily * days_remaining)
+    over_budget = (sim_expenses > sim_budget) if sim_budget > 0 else False
+    meets_savings = (sim_potential_savings >= sim_savings_target) if sim_savings_target > 0 else (sim_potential_savings >= 0)
 
     return jsonify({
         'scenario': scenario,
@@ -130,7 +140,7 @@ def run_simulation():
             'remaining_budget': budget_amount - total_expenses,
             'budget_usage_pct': round((total_expenses / budget_amount * 100) if budget_amount > 0 else 0, 1),
             'potential_savings': monthly_income - total_expenses,
-            'predicted_spending': round(total_expenses + (analysis['avg_daily_spending'] * days_remaining), 0)
+            'predicted_spending': round(baseline_predicted, 0)
         },
         'after': {
             'income': sim_income,
@@ -143,6 +153,8 @@ def run_simulation():
             'predicted_spending': round(sim_predicted, 0),
             'category_spending': {k: round(v, 0) for k, v in sim_category.items()}
         },
-        'over_budget': sim_expenses > sim_budget,
-        'meets_savings': sim_potential_savings >= sim_savings_target
+        'has_budget': budget_amount > 0,
+        'has_savings_target': savings_target > 0,
+        'over_budget': over_budget,
+        'meets_savings': meets_savings
     })

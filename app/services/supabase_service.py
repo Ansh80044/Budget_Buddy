@@ -42,7 +42,7 @@ class AuthResponse:
         self.session = type('Session', (), {'access_token': token})()
 
 
-def sign_up(email: str, password: str, name: str):
+def sign_up(email: str, password: str, name: str, monthly_income: float = 15000.0):
     client = get_client()
     if client:
         try:
@@ -52,7 +52,7 @@ def sign_up(email: str, password: str, name: str):
                     client.table('profiles').insert({
                         'id': resp.user.id,
                         'name': name,
-                        'monthly_income': 15000.0
+                        'monthly_income': monthly_income
                     }).execute()
                 except Exception:
                     pass
@@ -60,7 +60,7 @@ def sign_up(email: str, password: str, name: str):
         except Exception as err:
             print(f"Supabase sign_up error, falling back to local: {err}")
     # Local fallback
-    data = local_db.local_sign_up(email, password, name)
+    data = local_db.local_sign_up(email, password, name, monthly_income)
     return AuthResponse(data['user']['id'], data['user']['email'], data['session']['access_token'])
 
 
@@ -96,10 +96,39 @@ def get_user(access_token: str):
 
 
 # ──────────────────────────────────────────────
+# Helper: Check if user data lives in local DB
+# ──────────────────────────────────────────────
+
+def is_local_user(user_id: str) -> bool:
+    if not user_id:
+        return False
+    try:
+        from flask import session
+        tok = session.get('access_token', '')
+        if tok and tok.startswith('local-'):
+            return True
+        if session.get('user_id') == user_id and tok.startswith('local-'):
+            return True
+    except Exception:
+        pass
+    try:
+        conn = local_db.get_db()
+        c = conn.cursor()
+        c.execute("SELECT id FROM profiles WHERE id = ?", (user_id,))
+        row = c.fetchone()
+        conn.close()
+        return bool(row)
+    except Exception:
+        return False
+
+
+# ──────────────────────────────────────────────
 # Profile
 # ──────────────────────────────────────────────
 
 def get_profile(user_id: str):
+    if is_local_user(user_id):
+        return local_db.local_get_profile(user_id)
     client = get_client()
     if client:
         try:
@@ -112,10 +141,14 @@ def get_profile(user_id: str):
 
 
 def update_profile(user_id: str, data: dict):
+    if is_local_user(user_id):
+        return local_db.local_update_profile(user_id, data)
     client = get_client()
     if client:
         try:
-            return client.table('profiles').update(data).eq('id', user_id).execute()
+            res = client.table('profiles').update(data).eq('id', user_id).execute()
+            if res and hasattr(res, 'data') and res.data:
+                return res
         except Exception:
             pass
     return local_db.local_update_profile(user_id, data)
@@ -126,6 +159,8 @@ def update_profile(user_id: str, data: dict):
 # ──────────────────────────────────────────────
 
 def get_transactions(user_id: str, limit: int = 500):
+    if is_local_user(user_id):
+        return local_db.local_get_transactions(user_id, limit)
     client = get_client()
     if client:
         try:
@@ -137,7 +172,7 @@ def get_transactions(user_id: str, limit: int = 500):
                 .limit(limit)
                 .execute()
             )
-            if resp.data is not None:
+            if resp.data:
                 return resp.data
         except Exception:
             pass
@@ -145,6 +180,8 @@ def get_transactions(user_id: str, limit: int = 500):
 
 
 def get_transactions_by_month(user_id: str, year: int, month: int):
+    if is_local_user(user_id):
+        return local_db.local_get_transactions_by_month(user_id, year, month)
     client = get_client()
     if client:
         try:
@@ -160,7 +197,7 @@ def get_transactions_by_month(user_id: str, year: int, month: int):
                 .order('date', desc=True)
                 .execute()
             )
-            if resp.data is not None:
+            if resp.data:
                 return resp.data
         except Exception:
             pass
@@ -168,26 +205,37 @@ def get_transactions_by_month(user_id: str, year: int, month: int):
 
 
 def create_transaction(data: dict):
+    user_id = data.get('user_id')
+    if is_local_user(user_id):
+        return local_db.local_create_transaction(data)
     client = get_client()
     if client:
         try:
-            return client.table('transactions').insert(data).execute()
+            res = client.table('transactions').insert(data).execute()
+            if res and hasattr(res, 'data') and res.data:
+                return res
         except Exception:
             pass
     return local_db.local_create_transaction(data)
 
 
 def update_transaction(transaction_id: str, user_id: str, data: dict):
+    if is_local_user(user_id):
+        return local_db.local_update_transaction(transaction_id, user_id, data)
     client = get_client()
     if client:
         try:
-            return client.table('transactions').update(data).eq('id', transaction_id).eq('user_id', user_id).execute()
+            res = client.table('transactions').update(data).eq('id', transaction_id).eq('user_id', user_id).execute()
+            if res and hasattr(res, 'data') and res.data:
+                return res
         except Exception:
             pass
     return local_db.local_update_transaction(transaction_id, user_id, data)
 
 
 def delete_transaction(transaction_id: str, user_id: str):
+    if is_local_user(user_id):
+        return local_db.local_delete_transaction(transaction_id, user_id)
     client = get_client()
     if client:
         try:
@@ -198,6 +246,8 @@ def delete_transaction(transaction_id: str, user_id: str):
 
 
 def get_transaction(transaction_id: str, user_id: str):
+    if is_local_user(user_id):
+        return local_db.local_get_transaction(transaction_id, user_id)
     client = get_client()
     if client:
         try:
@@ -221,6 +271,8 @@ def get_transaction(transaction_id: str, user_id: str):
 # ──────────────────────────────────────────────
 
 def get_budget(user_id: str, year: int, month: int):
+    if is_local_user(user_id):
+        return local_db.local_get_budget(user_id, year, month)
     client = get_client()
     if client:
         try:
@@ -240,26 +292,46 @@ def get_budget(user_id: str, year: int, month: int):
 
 
 def create_budget(data: dict):
+    user_id = data.get('user_id')
+    if is_local_user(user_id):
+        return local_db.local_create_budget(data)
     client = get_client()
     if client:
         try:
-            return client.table('budgets').insert(data).execute()
+            res = client.table('budgets').insert(data).execute()
+            if res and hasattr(res, 'data') and res.data:
+                return res
         except Exception:
             pass
     return local_db.local_create_budget(data)
 
 
 def update_budget(budget_id: str, user_id: str, data: dict):
+    if is_local_user(user_id):
+        return local_db.local_update_budget(budget_id, user_id, data)
     client = get_client()
     if client:
         try:
-            return client.table('budgets').update(data).eq('id', budget_id).eq('user_id', user_id).execute()
+            res = client.table('budgets').update(data).eq('id', budget_id).eq('user_id', user_id).execute()
+            if res and hasattr(res, 'data') and res.data:
+                return res
         except Exception:
             pass
     return local_db.local_update_budget(budget_id, user_id, data)
 
 
 def upsert_budget_category(budget_id: str, category: str, limit_amount: float):
+    # Check if budget exists locally
+    try:
+        conn = local_db.get_db()
+        c = conn.cursor()
+        c.execute("SELECT id FROM budgets WHERE id = ?", (budget_id,))
+        row = c.fetchone()
+        conn.close()
+        if row:
+            return local_db.local_upsert_budget_category(budget_id, category, limit_amount)
+    except Exception:
+        pass
     client = get_client()
     if client:
         try:
@@ -290,6 +362,7 @@ def delete_budget_category(category_id: str):
             return client.table('budget_categories').delete().eq('id', category_id).execute()
         except Exception:
             pass
+    return local_db.local_delete_budget_category(category_id)
 
 
 # ──────────────────────────────────────────────
@@ -297,11 +370,13 @@ def delete_budget_category(category_id: str):
 # ──────────────────────────────────────────────
 
 def get_goals(user_id: str):
+    if is_local_user(user_id):
+        return local_db.local_get_goals(user_id)
     client = get_client()
     if client:
         try:
             resp = client.table('savings_goals').select('*').eq('user_id', user_id).execute()
-            if resp.data is not None:
+            if resp.data:
                 return resp.data
         except Exception:
             pass
@@ -309,6 +384,8 @@ def get_goals(user_id: str):
 
 
 def get_goal(goal_id: str, user_id: str):
+    if is_local_user(user_id):
+        return local_db.local_get_goal(goal_id, user_id)
     client = get_client()
     if client:
         try:
@@ -321,26 +398,37 @@ def get_goal(goal_id: str, user_id: str):
 
 
 def create_goal(data: dict):
+    user_id = data.get('user_id')
+    if is_local_user(user_id):
+        return local_db.local_create_goal(data)
     client = get_client()
     if client:
         try:
-            return client.table('savings_goals').insert(data).execute()
+            res = client.table('savings_goals').insert(data).execute()
+            if res and hasattr(res, 'data') and res.data:
+                return res
         except Exception:
             pass
     return local_db.local_create_goal(data)
 
 
 def update_goal(goal_id: str, user_id: str, data: dict):
+    if is_local_user(user_id):
+        return local_db.local_update_goal(goal_id, user_id, data)
     client = get_client()
     if client:
         try:
-            return client.table('savings_goals').update(data).eq('id', goal_id).eq('user_id', user_id).execute()
+            res = client.table('savings_goals').update(data).eq('id', goal_id).eq('user_id', user_id).execute()
+            if res and hasattr(res, 'data') and res.data:
+                return res
         except Exception:
             pass
     return local_db.local_update_goal(goal_id, user_id, data)
 
 
 def delete_goal(goal_id: str, user_id: str):
+    if is_local_user(user_id):
+        return local_db.local_delete_goal(goal_id, user_id)
     client = get_client()
     if client:
         try:

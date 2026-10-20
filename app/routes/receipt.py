@@ -39,13 +39,15 @@ def scan_receipt():
 
     # AI parse with Groq / fallback
     extracted = extract_receipt_data(ocr_text)
-    merchant = extracted.get('merchant', '')
+    merchant = (extracted.get('merchant') or '').strip()
+    if not merchant:
+        merchant = 'Food Delivery' if 'delivery' in ocr_text.lower() else 'Store Purchase'
     amount = safe_float(extracted.get('amount', 0))
     # Safeguard against product IDs or tracking numbers slipping through
     if amount > 200000:
         amount = 0.0
     receipt_date = extracted.get('date', str(date.today()))
-    description = extracted.get('description', merchant)
+    description = extracted.get('description', merchant) or merchant
     category = categorize_expense(f"{merchant} {description}", amount)
 
     return jsonify({

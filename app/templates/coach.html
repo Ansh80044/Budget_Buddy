@@ -88,7 +88,7 @@
 
     <div class="alert alert-info">
       <div>
-        <strong>Zero-Config AI Engine:</strong> When an OpenAI API Key is configured in <code>.env</code>, GPT-4o-mini is utilized. Without an API key, the built-in deterministic college financial reasoning engine delivers instant, accurate mathematical analysis.
+        <strong>High-Performance AI:</strong> Connected to free Groq Cloud AI (<code>openai/gpt-oss-120b</code>) with built-in intelligent college financial reasoning fallback for instant, data-grounded guidance.
       </div>
     </div>
 
@@ -115,6 +115,30 @@
 
 {% block scripts %}
 <script>
+  function escapeHtml(str) {
+    return str
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function formatMarkdown(text) {
+    let clean = escapeHtml(text);
+    // Bold: **text**
+    clean = clean.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    // Italic: *text*
+    clean = clean.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+    // Numbered list: 1. text
+    clean = clean.replace(/(?:^|\n)(\d+)\.\s+(.+)/g, '<br/><strong>$1.</strong> $2');
+    // Bullet lines: • or -
+    clean = clean.replace(/(?:^|\n)[•\-]\s+(.+)/g, '<br/>• $1');
+    // Double newlines to paragraph break, single newlines to <br/>
+    clean = clean.replace(/\n\n/g, '<div style="margin-top: 8px;"></div>').replace(/\n/g, '<br/>');
+    return clean;
+  }
+
   function handleChatKeydown(e) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -165,7 +189,11 @@
     const messages = document.getElementById('chatMessages');
     const div = document.createElement('div');
     div.className = `chat-bubble ${role}`;
-    div.innerHTML = text.replace(/\n/g, '<br/>');
+    if (role === 'assistant') {
+      div.innerHTML = formatMarkdown(text);
+    } else {
+      div.textContent = text;
+    }
     messages.appendChild(div);
     messages.scrollTop = messages.scrollHeight;
   }

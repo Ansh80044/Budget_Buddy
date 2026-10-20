@@ -170,7 +170,7 @@
         <div class="grid-2">
           <div class="form-group">
             <label for="add_amt" class="form-label">Amount (₹)</label>
-            <input type="number" id="add_amt" name="amount" class="form-control" placeholder="0.00" min="0" step="0.01" required/>
+            <input type="number" id="add_amt" name="amount" class="form-control" placeholder="0.00" min="0.01" step="any" required/>
           </div>
           <div class="form-group">
             <label for="add_date" class="form-label">Date</label>
@@ -181,12 +181,12 @@
         <div class="form-group" id="categorySelectionGroup">
           <div class="d-flex justify-between align-center mb-8">
             <label for="add_cat" class="form-label" style="margin-bottom:0;">Category</label>
-            <span id="aiSuggestionBadge" class="badge badge-primary" style="display:none; cursor:pointer;" onclick="applySuggestedCategory()">
+            <span id="aiSuggestionBadge" class="badge badge-primary" style="display:none; cursor:pointer;" onclick="applySuggestedCategory()" title="Click to apply suggested category">
               <svg viewBox="0 0 24 24" style="width:12px; height:12px; stroke:currentColor; fill:none; stroke-width:2;"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
               AI Suggested: <span id="suggCatName"></span>
             </span>
           </div>
-          <select id="add_cat" name="category" class="form-control">
+          <select id="add_cat" name="category" class="form-control" onchange="this.dataset.userModified='true'">
             <option value="">Auto-Assign / Select Category</option>
             {% for cat in categories %}
             <option value="{{ cat }}">{{ cat }}</option>
@@ -226,7 +226,7 @@
         <div class="grid-2">
           <div class="form-group">
             <label for="edit_amount" class="form-label">Amount (₹)</label>
-            <input type="number" id="edit_amount" name="amount" class="form-control" step="0.01" min="0" required/>
+            <input type="number" id="edit_amount" name="amount" class="form-control" step="any" min="0.01" required/>
           </div>
           <div class="form-group">
             <label for="edit_date" class="form-label">Date</label>
@@ -255,6 +255,16 @@
 {% block scripts %}
 <script>
   function openModal(id) {
+    if (id === 'addModal') {
+      const badge = document.getElementById('aiSuggestionBadge');
+      if (badge) badge.style.display = 'none';
+      const catSelect = document.getElementById('add_cat');
+      if (catSelect) {
+        catSelect.dataset.userModified = '';
+        catSelect.value = '';
+      }
+      currentSuggested = '';
+    }
     document.getElementById(id).classList.add('active');
   }
   function closeModal(id) {
@@ -273,7 +283,11 @@
   let currentSuggested = '';
 
   function triggerCategorySuggestion(desc) {
-    if (!desc || desc.length < 3) return;
+    const badge = document.getElementById('aiSuggestionBadge');
+    if (!desc || desc.trim().length < 2) {
+      if (badge) badge.style.display = 'none';
+      return;
+    }
     clearTimeout(timer);
     timer = setTimeout(async () => {
       try {
@@ -284,19 +298,31 @@
           body: JSON.stringify({description: desc, amount: amt})
         });
         const data = await res.json();
-        if (data.category) {
+        if (data.category && data.category !== 'Other') {
           currentSuggested = data.category;
           document.getElementById('suggCatName').textContent = data.category;
-          document.getElementById('aiSuggestionBadge').style.display = 'inline-flex';
+          if (badge) badge.style.display = 'inline-flex';
+          const catSelect = document.getElementById('add_cat');
+          // If user hasn't explicitly chosen a specific category, auto-assign the suggested one
+          if (catSelect && !catSelect.dataset.userModified && (!catSelect.value || catSelect.value === '')) {
+            catSelect.value = data.category;
+          }
+        } else if (badge) {
+          badge.style.display = 'none';
         }
       } catch(e){}
-    }, 400);
+    }, 300);
   }
 
   function applySuggestedCategory() {
     if (currentSuggested) {
-      document.getElementById('add_cat').value = currentSuggested;
-      document.getElementById('aiSuggestionBadge').style.display = 'none';
+      const catSelect = document.getElementById('add_cat');
+      if (catSelect) {
+        catSelect.value = currentSuggested;
+        catSelect.dataset.userModified = 'true';
+      }
+      const badge = document.getElementById('aiSuggestionBadge');
+      if (badge) badge.style.display = 'none';
     }
   }
 

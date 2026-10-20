@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview",
+    "dev": "python run.py",
+    "start": "python run.py",
+    "test": "pytest",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {

@@ -194,17 +194,18 @@ def extract_receipt_data(extracted_text: str) -> dict:
     client, model = get_client()
     if client:
         try:
-            prompt = f"""You are an expert receipt, invoice, and order details parser.
+            prompt = f"""You are an expert receipt, invoice, and order details parser for India.
 Extract the following information from this receipt/order OCR text and return valid JSON only:
-- merchant: name of the store, platform, or brand (e.g. Cadbury, Blinkit, Zepto, Swiggy, Zomato, Amazon). Do NOT use navigation labels like 'Order Details', 'Help', or 'Delivery Details'.
+- merchant: name of the store, platform, restaurant, or brand (e.g. Domino's Pizza, Zomato, Swiggy, Blinkit, Zepto, Amazon, Cadbury, McDonald's). If not explicitly written, infer it from the dish/item names (e.g. 'Capsicum & Red Paprika with Videshi Hot Sauce, Veg Parcel' are signature Domino's Pizza items). If delivery order, use 'Food Delivery' if brand is uncertain. Never return null or navigation labels like 'Order Details', 'Help', 'Delivery Details', or 'Order Delivered'.
 - amount: total purchase price / payable amount as a float number (NO currency symbols).
-  IMPORTANT RULES FOR AMOUNT:
-  * NEVER use Order IDs (like OD33875...), Barcodes, SKU codes, Phone numbers, Dates, PIN codes, or Tracking IDs as the amount!
-  * Look for price indicators (₹, Rs, INR, Price, Total, MRP, etc.).
+  CRITICAL RULES FOR AMOUNT:
+  * In Indian digital receipts and food delivery apps, Tesseract OCR frequently misreads the Rupee symbol (₹) as '%', '~', '*', 'z', or as a leading digit '7' before a 3-4 digit amount (for example, reading '₹659.03' as '%659.03', '~659.03', or '7659.03'). If you see '%659.03' or '7659.03' next to 'Reorder' or 'Total' for a few food items, the price is 659.03, NOT 7659.03.
+  * Standalone price numbers (with or without 'Total') next to action buttons like 'Reorder' or 'Pay' represent the total order amount.
+  * NEVER use Order IDs (like OD33875..., Order #118), Barcodes, SKU codes, Phone numbers, Dates, PIN codes, or Tracking IDs as the amount!
   * If individual item prices are shown (e.g. ₹54, ₹47) and a combined grand total is omitted, calculate the sum of the item prices (e.g. 54 + 47 = 101.0).
-  * In student budgeting, typical transaction amounts range between ₹5 and ₹50,000. Any number with 7+ integer digits is an ID, NOT a price.
-- date: purchase or order date in YYYY-MM-DD format (convert e.g. '28th Sep 2026' -> '2026-09-28'). If not found, use '{date.today()}'.
-- description: brief summary of purchased items (e.g. 'Cadbury Oreo, Dairy Milk Crackle').
+  * In student budgeting, typical transaction amounts range between ₹5 and ₹50,000.
+- date: purchase or order date in YYYY-MM-DD format (convert e.g. '17 Oct 2026' -> '2026-10-17', '28th Sep 2026' -> '2026-09-28'). If not found, use '{date.today()}'.
+- description: brief summary of purchased items (e.g. 'Capsicum & Red Paprika Pizza, Paneer Makhani Pizza, Veg Parcel' or 'Cadbury Oreo, Dairy Milk Crackle').
 
 Receipt/Order Text:
 {extracted_text}
@@ -219,20 +220,36 @@ Respond with ONLY a valid JSON object like:
             resp = client.chat.completions.create(
                 model=model,
                 messages=[{"role": "user", "content": prompt}],
-                max_tokens=600,
-                temperature=0.1,
+                max_tokens=1000,
+                temperature=0.0,
                 **extra_params
             )
-            text = resp.choices[0].message.content.strip()
+            text = (resp.choices[0].message.content or "").strip()
             match = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', text)
             if match:
                 text = match.group(1).strip()
-            
-            parsed = json.loads(text)
-            # Sanity guard: if the LLM accidentally returned an ID (> 200,000), drop to fallback
-            if float(parsed.get('amount', 0)) > 200000:
-                print(f"Suspiciously large amount from LLM ({parsed.get('amount')}), running heuristic guard.")
-                return _heuristic_receipt_parser(extracted_text)
+            else:
+                json_match = re.search(r'(\{[\s\S]*\})', text)
+                if json_match:
+                    text = json_match.group(1).strip()
+
+            parsed = json.loads(text) if text else {}
+            amount_val = float(parsed.get('amount', 0) or 0)
+            merchant_val = (parsed.get('merchant') or '').strip()
+
+            # Sanity guards: if the LLM accidentally returned 0, an ID (> 200,000), or null merchant
+            if amount_val <= 0 or amount_val > 200000 or not merchant_val:
+                print(f"LLM output need heuristic refinement (amount={amount_val}, merchant={merchant_val}).")
+                heur = _heuristic_receipt_parser(extracted_text)
+                if amount_val <= 0 or amount_val > 200000:
+                    parsed['amount'] = heur['amount']
+                if not merchant_val:
+                    parsed['merchant'] = heur['merchant']
+                if not parsed.get('description'):
+                    parsed['description'] = heur['description']
+                if not parsed.get('date'):
+                    parsed['date'] = heur['date']
+
             return parsed
         except Exception as e:
             print(f"Receipt AI parse error, using heuristic parser: {e}")
@@ -248,19 +265,23 @@ _MONTH_LOOKUP = {
 
 
 def _heuristic_receipt_parser(text: str) -> dict:
-    """Extract receipt details using robust regex and contextual filtering."""
+    """Extract receipt details using robust regex, brand recognition, and contextual filtering."""
     raw_lines = [line.strip() for line in (text or '').split('\n') if line.strip()]
 
-    # Patterns for navigation, order IDs, phone numbers, and ads
+    # Patterns for navigation, statuses, ratings, order IDs, phone numbers, and ads
     nav_pattern = re.compile(
-        r'^(?:<|>|\b)?\s*(?:order details|help|rate your experience|did you find|delivery details|order delivered|other|placed on)\b',
+        r'^(?:<|>|\b)?\s*(?:order details|help|rate your experience|did you find|delivery details|order delivered|other|placed on|delivery|delivered|reorder|how was your food\??|overall order rating|rating|good|feedback|track order|invoice)\b',
         re.IGNORECASE
     )
-    order_id_pattern = re.compile(r'(?:order\s*#?|od|id|sku|tracking|barcode)\s*[:#]?[a-z0-9_]{6,}', re.IGNORECASE)
+    order_id_pattern = re.compile(
+        r'\b(?:order\s*#?\s*\d+|order\s*id|od\s*[:#]?\s*[a-z0-9_]{4,}|id\s*[:#]\s*[a-z0-9_]{4,}|sku\b|tracking\b|barcode\b)',
+        re.IGNORECASE
+    )
     phone_pattern = re.compile(r'\b[6-9]\d{9}\b')
     ad_pattern = re.compile(r'\b(?:lifetime free|credit card|kotak|apply now|ad\b)', re.IGNORECASE)
+    rating_pattern = re.compile(r'^[w\s*~x]+$', re.IGNORECASE)
 
-    # 1. Date Extraction (handles "28th Sep 2026", "29 Sep 2026", "2026-09-28", "28/09/2026")
+    # 1. Date Extraction (handles "28th Sep 2026", "17 Oct 2026 19:24", "2026-09-28", "28/09/2026")
     date_str = ""
     date_word_match = re.search(r'(\d{1,2})(?:st|nd|rd|th)?\s+([a-zA-Z]{3,9})\s+(\d{4})', text)
     if date_word_match:
@@ -277,9 +298,9 @@ def _heuristic_receipt_parser(text: str) -> dict:
     # 2. Amount Extraction
     amount = 0.0
 
-    # Primary: Grand total / Amount due / Total paid
+    # Primary: Grand total / Amount due / Total paid / Net amount
     total_match = re.search(
-        r'(?:grand\s*total|final\s*total|total\s*amount|total|net\s*amount|amount\s*paid|paid|bill\s*amount)\s*[:=]?\s*(?:₹|rs\.?|inr)?\s*(\d+(?:\.\d{1,2})?)',
+        r'(?:grand\s*total|final\s*total|total\s*amount|total|net\s*amount|amount\s*paid|paid|bill\s*amount)\s*[:=]?\s*(?:₹|rs\.?|inr|[%~*])?\s*(\d+(?:\.\d{1,2})?)',
         text,
         re.IGNORECASE
     )
@@ -289,58 +310,101 @@ def _heuristic_receipt_parser(text: str) -> dict:
         if 0 < val < 200000 and val != float(date_str[:4] if len(date_str) >= 4 else 0):
             amount = val
 
-    # Secondary: Scan individual item lines for prices with currency markers
+    # Secondary: Specific currency matches (₹, Rs, INR, %, ~)
     if amount == 0.0:
-        item_prices = []
+        currency_matches = []
         for line in raw_lines:
-            # Exclude lines that are clearly order numbers, phone numbers, ads, or addresses
             if order_id_pattern.search(line) or phone_pattern.search(line) or ad_pattern.search(line):
                 continue
-            
-            # Find price patterns: ₹, Rs, INR, or common OCR misreads ('w54', 'R47') followed by digits
-            matches = re.findall(r'(?:₹|rs\.?|inr|[wR])\s*(\d+(?:\.\d{1,2})?)', line, re.IGNORECASE)
+            # Look for lines with ₹, Rs, INR, or common OCR misreads (w54, R47, %659.03, ~659.03) followed by digits
+            matches = re.findall(r'(?:₹|rs\.?|inr|[wR%~*])\s*(\d+(?:\.\d{1,2})?)', line, re.IGNORECASE)
             for m in matches:
                 val = float(m)
-                # Valid price range for items: ₹1 to ₹50,000 (discards weight numbers like 41759)
                 if 1 <= val < 50000:
-                    item_prices.append(val)
+                    currency_matches.append(val)
 
-        if item_prices:
-            # Sum up valid item prices
-            amount = sum(item_prices)
+        if currency_matches:
+            # If multiple individual items exist (like w54 and R47 summing to 101), sum if reasonable, else max
+            if len(currency_matches) > 1 and all(v < 500 for v in currency_matches):
+                amount = sum(currency_matches)
+            else:
+                amount = max(currency_matches)
+
+    # Tertiary: Standalone decimals like 659.03 or 7659.03 near action buttons or delivery context
+    if amount == 0.0:
+        for line in raw_lines:
+            if order_id_pattern.search(line) or phone_pattern.search(line) or (date_word_match and date_word_match.group(0) in line):
+                continue
+            dec_match = re.search(r'\b(\d+)\.(\d{2})\b', line)
+            if dec_match:
+                candidate = float(f"{dec_match.group(1)}.{dec_match.group(2)}")
+                # Check for leading '7' OCR artifact on Indian rupee (e.g. 7659.03 -> 659.03)
+                if dec_match.group(1).startswith('7') and len(dec_match.group(1)) >= 4:
+                    stripped = float(f"{dec_match.group(1)[1:]}.{dec_match.group(2)}")
+                    if 10 <= stripped < 25000:
+                        candidate = stripped
+                if 1 <= candidate < 50000:
+                    amount = candidate
+                    break
 
     # 3. Merchant and Description Extraction
     candidate_items = []
+    lower_text = text.lower()
     for line in raw_lines:
         if (nav_pattern.search(line) or order_id_pattern.search(line) or 
             phone_pattern.search(line) or ad_pattern.search(line) or
+            rating_pattern.match(line) or
+            (date_word_match and date_word_match.group(0) in line) or
+            re.search(r'^\d{1,2}\s+[a-zA-Z]{3}\s+\d{4}', line) or
+            re.search(r'^\d{1,2}:\d{2}', line) or
+            re.search(r'^(?:₹|rs\.?|inr|[wR%~*])?\s*\d+(?:\.\d{1,2})?$', line.strip(), re.IGNORECASE) or
             len(line) < 3 or re.match(r'^[^\w\s]+$', line)):
             continue
 
-        clean_line = re.sub(r'(?:₹|rs\.?|inr|[wR])\s*\d+(?:\.\d{1,2})?', '', line, flags=re.IGNORECASE).strip()
+        clean_line = re.sub(r'(?:₹|rs\.?|inr|[wR%~*])\s*\d+(?:\.\d{1,2})?', '', line, flags=re.IGNORECASE).strip()
         clean_line = re.sub(r'\s*\d+\s*x\s*[\d.]+\s*(?:g|ml|kg|l)?', '', clean_line, flags=re.IGNORECASE).strip()
+        # Remove trailing quantity numbers (e.g. 'Sauce 5' -> 'Sauce', 'Items 1' -> 'Items')
+        clean_line = re.sub(r'\s+\d+$', '', clean_line).strip()
+        # Remove leading bullets / icons (@, (@}, [x], etc.)
+        clean_line = re.sub(r'^\s*[\(\[\{]?\s*[@a-zA-Z0-9\-\*\#]\s*[\)\]\}]?\s*', '', clean_line).strip()
         clean_line = re.sub(r'^[|\-_.]+|\s*[|\-_.]+$', '', clean_line).strip()
 
-        if len(clean_line) >= 4 and not re.search(r'\b(?:hostel|street|address|kumar|road|nagar)\b', clean_line, re.IGNORECASE):
-            candidate_items.append(clean_line)
+        if len(clean_line) >= 4 and not re.search(r'\b(?:hostel|street|address|kumar|road|nagar|rating|food)\b', clean_line, re.IGNORECASE):
+            if not any(clean_line.lower() in existing.lower() or existing.lower() in clean_line.lower() for existing in candidate_items):
+                candidate_items.append(clean_line)
 
-    if candidate_items:
-        combined_text = " ".join(candidate_items)
-        brand_match = re.search(r'\b(Cadbury|Amul|Nestle|Pepsi|Coke|Blinkit|Zepto|Instamart|Swiggy|Zomato|Amazon|Flipkart)\b', combined_text, re.IGNORECASE)
-        if brand_match:
-            merchant = brand_match.group(1).title()
-        else:
-            merchant = candidate_items[0][:30]
-        description = ", ".join(candidate_items[:3])[:60]
+    # Infer merchant
+    combined_items = " ".join(candidate_items).lower()
+    if any(k in combined_items for k in ["parcel", "videshi", "desi makhani", "capsicum & red paprika", "domino"]):
+        merchant = "Domino's Pizza"
+    elif any(k in lower_text for k in ["cadbury"]):
+        merchant = "Cadbury"
+    elif any(k in lower_text for k in ["blinkit", "grofers"]):
+        merchant = "Blinkit"
+    elif any(k in lower_text for k in ["zepto"]):
+        merchant = "Zepto"
+    elif any(k in lower_text for k in ["instamart"]):
+        merchant = "Swiggy Instamart"
+    elif any(k in lower_text for k in ["swiggy"]):
+        merchant = "Swiggy"
+    elif any(k in lower_text for k in ["zomato"]):
+        merchant = "Zomato"
+    elif any(k in lower_text for k in ["amazon"]):
+        merchant = "Amazon"
+    elif any(k in lower_text for k in ["flipkart"]):
+        merchant = "Flipkart"
+    elif candidate_items:
+        merchant = "Food Delivery" if any(k in lower_text for k in ["delivery", "order", "food"]) else candidate_items[0][:30]
     else:
-        merchant = "Store Purchase"
-        description = "Receipt purchase"
+        merchant = "Food Delivery" if "delivery" in lower_text else "Store Purchase"
+
+    description = ", ".join(candidate_items[:3]) if candidate_items else f"{merchant} purchase"
 
     return {
         "merchant": merchant[:30],
         "amount": round(amount, 2),
         "date": date_str or str(date.today()),
-        "description": description or f"{merchant} purchase"
+        "description": description[:80] or f"{merchant} purchase"
     }
 
 

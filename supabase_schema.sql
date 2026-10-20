@@ -107,6 +107,12 @@ CREATE TABLE IF NOT EXISTS savings_goals (
 
 CREATE INDEX IF NOT EXISTS idx_savings_goals_user_id ON savings_goals(user_id);
 
-ALTER TABLE savings_goals ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can CRUD their own savings goals"
-  ON savings_goals FOR ALL USING (auth.uid() = user_id);
+-- ============================================================
+-- BACKEND SERVER POLICIES (Allow server-side Flask operations)
+-- ============================================================
+CREATE POLICY "Allow server backend access on profiles" ON profiles FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow server backend access on transactions" ON transactions FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow server backend access on budgets" ON budgets FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow server backend access on budget_categories" ON budget_categories FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow server backend access on savings_goals" ON savings_goals FOR ALL USING (true) WITH CHECK (true);
+

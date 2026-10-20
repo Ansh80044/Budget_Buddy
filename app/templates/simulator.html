@@ -79,7 +79,7 @@
         </div>
         <div class="form-group">
           <label class="form-label">Hypothetical Cost (₹)</label>
-          <input type="number" id="p_amount" class="form-control" placeholder="e.g. 2500" value="2500" min="0" step="100"/>
+          <input type="number" id="p_amount" class="form-control" placeholder="e.g. 2500" value="2500" min="0" step="any"/>
         </div>
       </div>
 
@@ -88,17 +88,21 @@
         <div class="form-group">
           <label class="form-label">Target Category</label>
           <select id="r_category" class="form-control">
-            {% for cat, amt in category_spending.items() %}
-            <option value="{{ cat }}">{{ cat }} (Current: ₹{{ "{:,.0f}".format(amt) }})</option>
-            {% endfor %}
-            <option value="Food & Dining">Food & Dining</option>
-            <option value="Entertainment">Entertainment</option>
-            <option value="Shopping">Shopping</option>
+            {% if category_spending %}
+              {% for cat, amt in category_spending.items() %}
+              <option value="{{ cat }}">{{ cat }} (Current: ₹{{ "{:,.0f}".format(amt) }})</option>
+              {% endfor %}
+            {% else %}
+              <option value="Food & Dining">Food & Dining</option>
+              <option value="Entertainment">Entertainment</option>
+              <option value="Shopping">Shopping</option>
+              <option value="Transportation">Transportation</option>
+            {% endif %}
           </select>
         </div>
         <div class="form-group">
           <label class="form-label">Reduction Target (₹)</label>
-          <input type="number" id="r_amount" class="form-control" placeholder="e.g. 1000" value="1000" min="0" step="100"/>
+          <input type="number" id="r_amount" class="form-control" placeholder="e.g. 1000" value="1000" min="0" step="any"/>
         </div>
       </div>
 
@@ -106,7 +110,7 @@
       <div id="form_increase_income" style="display: none;">
         <div class="form-group">
           <label class="form-label">Extra Income Amount (₹)</label>
-          <input type="number" id="inc_amount" class="form-control" placeholder="e.g. 4000 (Scholarship / Freelance)" value="4000" min="0" step="500"/>
+          <input type="number" id="inc_amount" class="form-control" placeholder="e.g. 4000 (Scholarship / Freelance)" value="4000" min="0" step="any"/>
         </div>
       </div>
 
@@ -114,7 +118,7 @@
       <div id="form_savings_boost" style="display: none;">
         <div class="form-group">
           <label class="form-label">Increase Monthly Savings Target by (₹)</label>
-          <input type="number" id="sav_amount" class="form-control" placeholder="e.g. 1500" value="1500" min="0" step="500"/>
+          <input type="number" id="sav_amount" class="form-control" placeholder="e.g. 1500" value="1500" min="0" step="any"/>
         </div>
       </div>
 
@@ -233,18 +237,34 @@
   function renderSimulationResults(data) {
     document.getElementById('emptySimState').style.display = 'none';
     document.getElementById('simResultsContainer').style.display = 'block';
-    document.getElementById('simStatusBadge').textContent = 'Simulated';
-    document.getElementById('simStatusBadge').className = data.over_budget ? 'badge badge-danger' : 'badge badge-success';
+    // Status badge
+    if (data.has_budget && data.over_budget) {
+      document.getElementById('simStatusBadge').textContent = 'Over Budget';
+      document.getElementById('simStatusBadge').className = 'badge badge-danger';
+    } else if (data.after.balance < 0) {
+      document.getElementById('simStatusBadge').textContent = 'Deficit';
+      document.getElementById('simStatusBadge').className = 'badge badge-danger';
+    } else {
+      document.getElementById('simStatusBadge').textContent = 'Healthy';
+      document.getElementById('simStatusBadge').className = 'badge badge-success';
+    }
 
     // Alerts
     const alerts = [];
-    if (data.over_budget) {
-      alerts.push('<div class="alert alert-danger" style="margin-bottom:8px;"><strong>Budget Alert:</strong> This scenario puts you over your defined monthly spending limit.</div>');
+    if (data.has_budget && data.over_budget) {
+      alerts.push('<div class="alert alert-danger" style="margin-bottom:8px;"><strong>Budget Alert:</strong> This scenario puts you over your defined monthly spending limit of ₹' + (data.before.remaining_budget + data.before.expenses).toLocaleString('en-IN') + '.</div>');
     }
-    if (data.meets_savings) {
-      alerts.push('<div class="alert alert-success" style="margin-bottom:8px;"><strong>Savings Target:</strong> You successfully maintain your monthly savings target under this plan.</div>');
-    } else {
-      alerts.push('<div class="alert alert-warning" style="margin-bottom:8px;"><strong>Savings Gap:</strong> Under this scenario, you may fall short of your savings target.</div>');
+    if (data.after.balance < 0) {
+      alerts.push('<div class="alert alert-danger" style="margin-bottom:8px;"><strong>Cash Flow Warning:</strong> Simulated total expenses exceed your monthly income by ₹' + Math.abs(data.after.balance).toLocaleString('en-IN') + '.</div>');
+    }
+    if (data.has_savings_target) {
+      if (data.meets_savings) {
+        alerts.push('<div class="alert alert-success" style="margin-bottom:8px;"><strong>Savings Goal:</strong> You stay on track to meet your monthly savings target!</div>');
+      } else {
+        alerts.push('<div class="alert alert-warning" style="margin-bottom:8px;"><strong>Savings Gap:</strong> Under this scenario, you may fall short of your savings target by ₹' + Math.abs(data.after.savings_gap).toLocaleString('en-IN') + '.</div>');
+      }
+    } else if (!data.over_budget && data.after.balance >= 0) {
+      alerts.push('<div class="alert alert-success" style="margin-bottom:8px;"><strong>Feasible Scenario:</strong> Projected surplus of ₹' + data.after.balance.toLocaleString('en-IN') + ' remains available.</div>');
     }
     document.getElementById('simAlertsBox').innerHTML = alerts.join('');
 
